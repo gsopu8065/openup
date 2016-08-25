@@ -1,0 +1,11 @@
+#map {
+  height: 80%;
+  width: 100%;
+}
+.spinner svg{
+  background: transparent;
+}
+
+.loading-container .loading {
+  background: transparent;
+}
