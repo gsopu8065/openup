@@ -13,14 +13,11 @@ angular.module('starter.controllers', [])
     $cordovaGeolocation.getCurrentPosition(posOptions).then(function (position) {
       var lat  = position.coords.latitude;
       var long = position.coords.longitude;
-      $scope.lat = lat
-      $scope.long = long
-
       var myLatlng = new google.maps.LatLng(lat, long);
 
       var mapOptions = {
         center: myLatlng,
-        zoom: 14,
+        zoom: 18,
         disableDefaultUI: true,
         styles: googleMapStyles,
         mapTypeId: google.maps.MapTypeId.ROADMAP
@@ -42,9 +39,9 @@ angular.module('starter.controllers', [])
         }
       });
       drawingManager.setMap(map);
+      map.setOptions({draggable: false, zoomControl: true});
       $scope.map = map;
       $ionicLoading.hide();
-      $scope.status = "initalized"
 
     }, function(err) {
       $ionicLoading.hide();
@@ -61,32 +58,35 @@ angular.module('starter.controllers', [])
       function(err) {
         // error
         console.log('error in watch');
-        $scope.status = "error in watch"
+        console.log('code: '    + error.code    + '\n' +
+          'message: ' + error.message + '\n');
       },
       function(position) {
         var lat  = position.coords.latitude
         var long = position.coords.longitude
-        $scope.lat = lat
-        $scope.long = long
-        console.log('assigning your new position');
-        $scope.status = "assigning your new position"
         var newPosition = new google.maps.LatLng(lat, long)
         $scope.currentLocation.setPosition(newPosition);
         $scope.map.setCenter(newPosition)
+
+        //read map service
+        var temp = new google.maps.Marker({
+          position: new google.maps.LatLng(36.084319, -86.918210),
+          map: $scope.map,
+          icon: "img/ben.png",
+          size: new google.maps.Size(20, 32)
+        });
+        MapCtrl.getNearByPeople().success(function(response){
+          var temp = new google.maps.Marker({
+            position: new google.maps.LatLng(response.location.latitude, response.location.longitude),
+            map: $scope.map,
+            icon: response.face
+          });
+          console.log(response.face)
+        })
+
       });
 
     $cordovaGeolocation.clearWatch(watch)
-      /*.then(function(result) {
-        // success
-        console.log('clear success');
-        $scope.status = "clear success"
-      }, function (error) {
-        // error
-        console.log('error in clear');
-        $scope.status = "error in clear"
-      });*/
-
-
   })
 
   .controller('ChatsCtrl', function ($scope, Chats) {

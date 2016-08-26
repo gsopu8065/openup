@@ -49,27 +49,19 @@ angular.module('starter.services', [])
     };
   })
 
-  .factory('MapCtrl', function () {
+  .factory('MapCtrl', function ($http) {
     // Might use a resource here that returns a JSON array
 
     // Some fake testing data
-    var mapRes = [{
-      id: 0,
-      name: 'Ben Sparrow',
-      lastText: 'You on your way?',
-      face: 'img/ben.png',
-      location: {latitude: 36.084319, longitude: -86.918210}
-    }, {
-      id: 1,
-      name: 'Max Lynx',
-      lastText: 'Hey, it\'s me',
-      face: 'img/max.png',
-      location: {latitude: 36.084842, longitude: -86.917617}
-    }];
+    var MapService = {};
 
-    return {
-      getNearByPeople: function () {
-        return mapRes;
-      }
+    MapService.getNearByPeople = function(){
+      return $http({
+        method: 'JSONP',
+        url: 'js/mapRes.json',
+      });
     };
+
+
+    return MapService;
   });
