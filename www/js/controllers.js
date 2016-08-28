@@ -49,7 +49,7 @@ angular.module('starter.controllers', [])
     });
 
     var watchOptions = {
-      timeout : 3000,
+      timeout : 10000,
       enableHighAccuracy: false // may cause errors if true
     };
     var watch = $cordovaGeolocation.watchPosition(watchOptions);
@@ -58,8 +58,8 @@ angular.module('starter.controllers', [])
       function(err) {
         // error
         console.log('error in watch');
-        console.log('code: '    + error.code    + '\n' +
-          'message: ' + error.message + '\n');
+        console.log('code: '    + err.code    + '\n' +
+          'message: ' + err.message + '\n');
       },
       function(position) {
         var lat  = position.coords.latitude
@@ -69,12 +69,25 @@ angular.module('starter.controllers', [])
         $scope.map.setCenter(newPosition)
 
         //read map service
-        var temp = new google.maps.Marker({
+        var icon = {
+          url: "img/ben.png",
+          scaledSize : new google.maps.Size(32, 32),
+          scale: 10
+        };
+
+        var marker = new google.maps.Marker({
           position: new google.maps.LatLng(36.084319, -86.918210),
           map: $scope.map,
-          icon: "img/ben.png",
-          size: new google.maps.Size(20, 32)
+          icon: icon,
+          optimized:false
         });
+
+        var myoverlay = new google.maps.OverlayView();
+        myoverlay.draw = function () {
+          this.getPanes().markerLayer.id='markerLayer';
+        };
+        myoverlay.setMap($scope.map);
+
         MapCtrl.getNearByPeople().success(function(response){
           var temp = new google.maps.Marker({
             position: new google.maps.LatLng(response.location.latitude, response.location.longitude),

@@ -9,3 +9,7 @@
 .loading-container .loading {
   background: transparent;
 }
+
+#markerLayer img {
+  border-radius: 50%;
+}
