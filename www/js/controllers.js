@@ -1,6 +1,6 @@
 angular.module('starter.controllers', [])
 
-  .controller('DashCtrl', function ($scope, $cordovaGeolocation, $ionicPlatform, $ionicLoading, MapCtrl) {
+  .controller('DashCtrl', function ($scope, $cordovaGeolocation, $ionicPlatform, $ionicLoading, $ionicModal, $ionicSlideBoxDelegate, MapCtrl) {
 
     var googleMapStyles = [{"featureType":"landscape.natural","elementType":"geometry.fill","stylers":[{"visibility":"on"},{"color":"#e0efef"}]},{"featureType":"poi","elementType":"geometry.fill","stylers":[{"visibility":"on"},{"hue":"#1900ff"},{"color":"#c0e8e8"}]},{"featureType":"road","elementType":"geometry","stylers":[{"lightness":100},{"visibility":"simplified"}]},{"featureType":"road","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"transit.line","elementType":"geometry","stylers":[{"visibility":"on"},{"lightness":700}]},{"featureType":"water","elementType":"all","stylers":[{"color":"#7dcdcd"}]}]
 
@@ -31,7 +31,6 @@ angular.module('starter.controllers', [])
       });
 
       var drawingManager = new google.maps.drawing.DrawingManager({
-        drawingMode: google.maps.drawing.OverlayType.MARKER,
         drawingControl: true,
         drawingControlOptions: {
           position: google.maps.ControlPosition.TOP_CENTER,
@@ -39,7 +38,7 @@ angular.module('starter.controllers', [])
         }
       });
       drawingManager.setMap(map);
-      map.setOptions({draggable: false, zoomControl: true});
+      map.setOptions({draggable: true, zoomControl: true});
       $scope.map = map;
       $ionicLoading.hide();
 
@@ -69,18 +68,25 @@ angular.module('starter.controllers', [])
         $scope.map.setCenter(newPosition)
 
         //read map service
-        var icon = {
-          url: "img/ben.png",
-          scaledSize : new google.maps.Size(32, 32),
-          scale: 10
-        };
+        MapCtrl.getNearByPeople().success(function(response){
+          angular.forEach(response, function (res, index) {
+            var marker = new google.maps.Marker({
+              position: new google.maps.LatLng(res.location.latitude, res.location.longitude),
+              map: $scope.map,
+              icon: {
+                url: res.face,
+                scaledSize : new google.maps.Size(32, 32),
+                scale: 10
+              },
+              optimized:false
+            });
 
-        var marker = new google.maps.Marker({
-          position: new google.maps.LatLng(36.084319, -86.918210),
-          map: $scope.map,
-          icon: icon,
-          optimized:false
-        });
+            marker.addListener('click', function() {
+              //$scope.openModal();
+              window.location.href = "#/tab/chats/0"
+            });
+          });
+        })
 
         var myoverlay = new google.maps.OverlayView();
         myoverlay.draw = function () {
@@ -88,18 +94,32 @@ angular.module('starter.controllers', [])
         };
         myoverlay.setMap($scope.map);
 
-        MapCtrl.getNearByPeople().success(function(response){
-          var temp = new google.maps.Marker({
-            position: new google.maps.LatLng(response.location.latitude, response.location.longitude),
-            map: $scope.map,
-            icon: response.face
-          });
-          console.log(response.face)
-        })
-
       });
-
     $cordovaGeolocation.clearWatch(watch)
+
+    //modal open
+    $ionicModal.fromTemplateUrl('templates/user-detail.html', {
+      scope: $scope,
+      animation: 'slide-in-up'
+    }).then(function(modal) {
+      $scope.modal = modal;
+    });
+    $scope.openModal = function() {
+      $scope.modal.show();
+      $ionicSlideBoxDelegate.slide(0);
+    };
+    $scope.closeModal = function() {
+      $scope.modal.hide();
+    };
+
+
+    //show images
+    $scope.aImages = [
+      "img/ben.png",
+      "img/adam.jpg",
+      "img/mike.png"
+    ];
+
   })
 
   .controller('ChatsCtrl', function ($scope, Chats) {

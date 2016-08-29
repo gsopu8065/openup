@@ -13,3 +13,14 @@
 #markerLayer img {
   border-radius: 50%;
 }
+
+.fullscreen-image1 {
+  max-width: 100%;
+  max-height: 80%;
+  bottom: 0;
+  left: 0;
+  margin: auto;
+  overflow: auto;
+  right: 0;
+  top: 0;
+}

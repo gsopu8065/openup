@@ -57,7 +57,6 @@ angular.module('starter.services', [])
 
     MapService.getNearByPeople = function(){
       return $http({
-        method: 'JSONP',
         url: 'js/mapRes.json',
       });
     };
