@@ -17,7 +17,7 @@ angular.module('starter.controllers', [])
 
       var mapOptions = {
         center: myLatlng,
-        zoom: 18,
+        zoom: 17,
         disableDefaultUI: true,
         styles: googleMapStyles,
         mapTypeId: google.maps.MapTypeId.ROADMAP
@@ -67,6 +67,16 @@ angular.module('starter.controllers', [])
         $scope.currentLocation.setPosition(newPosition);
         $scope.map.setCenter(newPosition)
 
+        // Add circle overlay and bind to marker
+        var circle = new google.maps.Circle({
+          map: $scope.map,
+          radius: 100,    // 10 miles in metres
+          fillColor: '#ADD8E6',
+          strokeOpacity: 0.3,
+          strokeWeight: 1
+        });
+        circle.bindTo('center', $scope.currentLocation, 'position');
+
         //read map service
         MapCtrl.getNearByPeople().success(function(response){
           angular.forEach(response, function (res, index) {
@@ -82,8 +92,9 @@ angular.module('starter.controllers', [])
             });
 
             marker.addListener('click', function() {
-              //$scope.openModal();
-              window.location.href = "#/tab/chats/0"
+              //show images
+              $scope.aImages = res.allImages;
+              $scope.openModal();
             });
           });
         })
@@ -112,16 +123,7 @@ angular.module('starter.controllers', [])
       $scope.modal.hide();
     };
 
-
-    //show images
-    $scope.aImages = [
-      "img/ben.png",
-      "img/adam.jpg",
-      "img/mike.png"
-    ];
-
   })
-
   .controller('ChatsCtrl', function ($scope, Chats) {
     // With the new view caching in Ionic, Controllers are only called
     // when they are recreated or on app start, instead of every page change.
