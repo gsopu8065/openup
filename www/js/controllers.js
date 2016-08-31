@@ -42,6 +42,24 @@ angular.module('starter.controllers', [])
       $scope.map = map;
       $ionicLoading.hide();
 
+      //draw circle
+      $scope.circle = new google.maps.Circle({
+        map: map,
+        radius: 150,  // IN METERS.
+        fillColor: '#80dfff',
+        fillOpacity: 0.3,
+        strokeColor: "#FFF",
+        strokeWeight: 0,
+        center: myLatlng
+      });
+
+      //overlay css for marker
+      var myoverlay = new google.maps.OverlayView();
+      myoverlay.draw = function () {
+        this.getPanes().markerLayer.id='markerLayer';
+      };
+      myoverlay.setMap($scope.map);
+
     }, function(err) {
       $ionicLoading.hide();
       console.log(err);
@@ -51,7 +69,9 @@ angular.module('starter.controllers', [])
       timeout : 10000,
       enableHighAccuracy: false // may cause errors if true
     };
+
     var watch = $cordovaGeolocation.watchPosition(watchOptions);
+    $scope.nearByPeople = [];
     watch.then(
       null,
       function(err) {
@@ -66,19 +86,17 @@ angular.module('starter.controllers', [])
         var newPosition = new google.maps.LatLng(lat, long)
         $scope.currentLocation.setPosition(newPosition);
         $scope.map.setCenter(newPosition)
-
-        // Add circle overlay and bind to marker
-        var circle = new google.maps.Circle({
-          map: $scope.map,
-          radius: 100,    // 10 miles in metres
-          fillColor: '#ADD8E6',
-          strokeOpacity: 0.3,
-          strokeWeight: 1
-        });
-        circle.bindTo('center', $scope.currentLocation, 'position');
+        $scope.circle.setCenter(newPosition)
 
         //read map service
         MapCtrl.getNearByPeople().success(function(response){
+          //update nearby people location
+
+
+          //delete markers not in location
+
+          //create new response
+
           angular.forEach(response, function (res, index) {
             var marker = new google.maps.Marker({
               position: new google.maps.LatLng(res.location.latitude, res.location.longitude),
@@ -96,14 +114,9 @@ angular.module('starter.controllers', [])
               $scope.aImages = res.allImages;
               $scope.openModal();
             });
+            $scope.nearByPeople.push({id:res.id, marker: marker})
           });
         })
-
-        var myoverlay = new google.maps.OverlayView();
-        myoverlay.draw = function () {
-          this.getPanes().markerLayer.id='markerLayer';
-        };
-        myoverlay.setMap($scope.map);
 
       });
     $cordovaGeolocation.clearWatch(watch)
