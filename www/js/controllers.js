@@ -1,8 +1,28 @@
 angular.module('starter.controllers', [])
 
-  .controller('DashCtrl', function ($scope, $cordovaGeolocation, $ionicPlatform, $ionicLoading, $ionicModal, $ionicSlideBoxDelegate, MapCtrl) {
+  .controller('DashCtrl', function ($scope, $cordovaGeolocation, $ionicPlatform, $ionicLoading, $ionicModal, $ionicSlideBoxDelegate, $filter, MapCtrl) {
 
-    var googleMapStyles = [{"featureType":"landscape.natural","elementType":"geometry.fill","stylers":[{"visibility":"on"},{"color":"#e0efef"}]},{"featureType":"poi","elementType":"geometry.fill","stylers":[{"visibility":"on"},{"hue":"#1900ff"},{"color":"#c0e8e8"}]},{"featureType":"road","elementType":"geometry","stylers":[{"lightness":100},{"visibility":"simplified"}]},{"featureType":"road","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"transit.line","elementType":"geometry","stylers":[{"visibility":"on"},{"lightness":700}]},{"featureType":"water","elementType":"all","stylers":[{"color":"#7dcdcd"}]}]
+    var googleMapStyles = [{
+      "featureType": "landscape.natural",
+      "elementType": "geometry.fill",
+      "stylers": [{"visibility": "on"}, {"color": "#e0efef"}]
+    }, {
+      "featureType": "poi",
+      "elementType": "geometry.fill",
+      "stylers": [{"visibility": "on"}, {"hue": "#1900ff"}, {"color": "#c0e8e8"}]
+    }, {
+      "featureType": "road",
+      "elementType": "geometry",
+      "stylers": [{"lightness": 100}, {"visibility": "simplified"}]
+    }, {
+      "featureType": "road",
+      "elementType": "labels",
+      "stylers": [{"visibility": "off"}]
+    }, {
+      "featureType": "transit.line",
+      "elementType": "geometry",
+      "stylers": [{"visibility": "on"}, {"lightness": 700}]
+    }, {"featureType": "water", "elementType": "all", "stylers": [{"color": "#7dcdcd"}]}]
 
     $ionicLoading.show({
       template: '<ion-spinner icon="bubbles"></ion-spinner><br/>Acquiring location!'
@@ -11,7 +31,7 @@ angular.module('starter.controllers', [])
     var posOptions = {timeout: 10000, enableHighAccuracy: false};
 
     $cordovaGeolocation.getCurrentPosition(posOptions).then(function (position) {
-      var lat  = position.coords.latitude;
+      var lat = position.coords.latitude;
       var long = position.coords.longitude;
       var myLatlng = new google.maps.LatLng(lat, long);
 
@@ -56,17 +76,17 @@ angular.module('starter.controllers', [])
       //overlay css for marker
       var myoverlay = new google.maps.OverlayView();
       myoverlay.draw = function () {
-        this.getPanes().markerLayer.id='markerLayer';
+        this.getPanes().markerLayer.id = 'markerLayer';
       };
       myoverlay.setMap($scope.map);
 
-    }, function(err) {
+    }, function (err) {
       $ionicLoading.hide();
       console.log(err);
     });
 
     var watchOptions = {
-      timeout : 10000,
+      timeout: 10000,
       enableHighAccuracy: false // may cause errors if true
     };
 
@@ -74,47 +94,63 @@ angular.module('starter.controllers', [])
     $scope.nearByPeople = [];
     watch.then(
       null,
-      function(err) {
+      function (err) {
         // error
         console.log('error in watch');
-        console.log('code: '    + err.code    + '\n' +
+        console.log('code: ' + err.code + '\n' +
           'message: ' + err.message + '\n');
       },
-      function(position) {
-        var lat  = position.coords.latitude
+      function (position) {
+        var lat = position.coords.latitude
         var long = position.coords.longitude
         var newPosition = new google.maps.LatLng(lat, long)
-        $scope.currentLocation.setPosition(newPosition);
-        $scope.map.setCenter(newPosition)
-        $scope.circle.setCenter(newPosition)
+        if ($scope.currentLocation.getPosition().lat().toFixed(4) != newPosition.lat().toFixed(4) || $scope.currentLocation.getPosition().lng().toFixed(4) != newPosition.lng().toFixed(4)) {
+          $scope.currentLocation.setPosition(newPosition);
+          $scope.map.setCenter(newPosition)
+          $scope.circle.setCenter(newPosition)
+        }
 
         //read map service
-        MapCtrl.getNearByPeople().success(function(response){
+        MapCtrl.getNearByPeople().success(function (response) {
           //update nearby people location
-
-
-          //delete markers not in location
-
-          //create new response
-
+          var newList = []
           angular.forEach(response, function (res, index) {
+            var result_find = $filter('filter')($scope.nearByPeople, {id: res.id});
+            if (result_find.length == 0) {
+              newList.push(res)
+            }
+            else{
+
+              result_find[0].marker.setPosition(new google.maps.LatLng(res.location.latitude, res.location.longitude))
+            }
+          });
+
+          //delete outside users
+          angular.forEach($scope.nearByPeople, function (res, index) {
+            var result_find = $filter('filter')(response, {id: res.id});
+            if (result_find.length == 0) {
+              $scope.nearByPeople[index].marker.setMap(null);
+            }
+          });
+
+          angular.forEach(newList, function (res, index) {
             var marker = new google.maps.Marker({
               position: new google.maps.LatLng(res.location.latitude, res.location.longitude),
               map: $scope.map,
               icon: {
                 url: res.face,
-                scaledSize : new google.maps.Size(32, 32),
+                scaledSize: new google.maps.Size(32, 32),
                 scale: 10
               },
-              optimized:false
+              optimized: false
             });
 
-            marker.addListener('click', function() {
+            marker.addListener('click', function () {
               //show images
               $scope.aImages = res.allImages;
               $scope.openModal();
             });
-            $scope.nearByPeople.push({id:res.id, marker: marker})
+            $scope.nearByPeople.push({id: res.id, marker: marker})
           });
         })
 
@@ -125,14 +161,14 @@ angular.module('starter.controllers', [])
     $ionicModal.fromTemplateUrl('templates/user-detail.html', {
       scope: $scope,
       animation: 'slide-in-up'
-    }).then(function(modal) {
+    }).then(function (modal) {
       $scope.modal = modal;
     });
-    $scope.openModal = function() {
+    $scope.openModal = function () {
       $scope.modal.show();
       $ionicSlideBoxDelegate.slide(0);
     };
-    $scope.closeModal = function() {
+    $scope.closeModal = function () {
       $scope.modal.hide();
     };
 
