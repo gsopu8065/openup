@@ -1,4 +1,4 @@
-angular.module('starter.controllers', [])
+angular.module('starter.controllers', ['firebase'])
 
   .controller('DashCtrl', function ($scope, $cordovaGeolocation, $ionicPlatform, $ionicLoading, $ionicModal, $ionicSlideBoxDelegate, $filter, MapCtrl) {
 
@@ -119,7 +119,7 @@ angular.module('starter.controllers', [])
             if (result_find.length == 0) {
               newList.push(res)
             }
-            else{
+            else {
 
               result_find[0].marker.setPosition(new google.maps.LatLng(res.location.latitude, res.location.longitude))
             }
@@ -192,8 +192,86 @@ angular.module('starter.controllers', [])
     $scope.chat = Chats.get($stateParams.chatId);
   })
 
-  .controller('AccountCtrl', function ($scope) {
+  .controller('LoginCtrl', function ($scope, $stateParams, $firebaseAuth, $state) {
+
+    var provider = new firebase.auth.FacebookAuthProvider();
+    var auth = firebase.auth();
+    console.log("init donne")
+
+    $scope.login = function () {
+      console.log("login called")
+      //web
+      /*auth.signInWithPopup(provider).then(function(result) {
+        var token = result.credential.accessToken;
+        var user = result.user;
+        console.log(user);
+        $state.go('tab.dash')
+      }).catch(function(error) {
+        var errorCode = error.code;
+        var errorMessage = error.message;
+        // The email of the user's account used.
+        var email = error.email;
+        // The firebase.auth.AuthCredential type that was used.
+        var credential = error.credential;
+      });*/
+
+      //app
+      auth.signInWithRedirect(provider);
+              console.log("login called2")
+      firebase.auth().getRedirectResult().then(function(result) {
+                                               
+                                               console.log("result", result)
+        if (result.credential) {
+          // This gives you a Facebook Access Token. You can use it to access the Facebook API.
+          var token = result.credential.accessToken;
+          // ...
+        }
+        // The signed-in user info.
+        var user = result.user;
+                                               
+        $state.go('tab.dash')
+      }).catch(function(error) {
+        // Handle Errors here.
+        var errorCode = error.code;
+        var errorMessage = error.message;
+        // The email of the user's account used.
+        var email = error.email;
+        // The firebase.auth.AuthCredential type that was used.
+        var credential = error.credential;
+        // ...
+               console.log("error", error)
+      });
+
+
+    };
+
+    //auto login
+    auth.onAuthStateChanged(function(user) {
+      if (user) {
+        // User signed in!
+        var uid = user.uid;
+        console.log(user)
+        $state.go('tab.dash')
+      } else {
+        // User logged out
+        console.log("User logged out")
+      }
+    });
+
+  })
+
+  .controller('AccountCtrl', function ($scope, $state) {
     $scope.settings = {
       enableFriends: true
     };
+
+    $scope.logout = function(){
+      firebase.auth().signOut().then(function() {
+        // Sign-out successful.
+        $state.go('login')
+      }, function(error) {
+        // An error happened.
+      });
+    }
+
   });
