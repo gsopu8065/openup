@@ -1,6 +1,6 @@
 angular.module('starter.controllers', ['firebase'])
 
-  .controller('DashCtrl', function ($scope, $cordovaGeolocation, $ionicPlatform, $ionicLoading, $ionicModal, $ionicSlideBoxDelegate, $filter, MapCtrl) {
+  .controller('DashCtrl', function ($scope, $cordovaGeolocation, $ionicPlatform, $ionicLoading, $ionicModal, $ionicSlideBoxDelegate, $filter, MapCtrl, $state) {
 
     var googleMapStyles = [{
       "featureType": "landscape.natural",
@@ -43,11 +43,25 @@ angular.module('starter.controllers', ['firebase'])
         mapTypeId: google.maps.MapTypeId.ROADMAP
       };
 
+      //facebook profile info get start
+      $scope.user = firebase.auth().currentUser;
+      //facebook profile info get end
+
+
       var map = new google.maps.Map(document.getElementById("map"), mapOptions);
       $scope.currentLocation = new google.maps.Marker({
         position: myLatlng,
-        map: map
-        /*icon: im*/
+        map: map,
+        icon: {
+          url: $scope.user.photoURL,
+          scaledSize: new google.maps.Size(38, 38),
+          scale: 10
+        },
+        optimized: false
+      });
+
+      $scope.currentLocation.addListener('click', function () {
+        $state.go('tab.chat-detail')
       });
 
       var drawingManager = new google.maps.drawing.DrawingManager({
@@ -90,7 +104,9 @@ angular.module('starter.controllers', ['firebase'])
       enableHighAccuracy: false // may cause errors if true
     };
 
-    var watch = $cordovaGeolocation.watchPosition(watchOptions);
+
+    //commment for a while
+    /*var watch = $cordovaGeolocation.watchPosition(watchOptions);
     $scope.nearByPeople = [];
     watch.then(
       null,
@@ -154,8 +170,8 @@ angular.module('starter.controllers', ['firebase'])
           });
         })
 
-      });
-    $cordovaGeolocation.clearWatch(watch)
+      });*/
+    //$cordovaGeolocation.clearWatch(watch)
 
     //modal open
     $ionicModal.fromTemplateUrl('templates/user-detail.html', {
@@ -189,7 +205,79 @@ angular.module('starter.controllers', ['firebase'])
   })
 
   .controller('ChatDetailCtrl', function ($scope, $stateParams, Chats) {
-    $scope.chat = Chats.get($stateParams.chatId);
+    $scope.user = firebase.auth().currentUser;
+
+
+    var messagesRef = firebase.database().ref('messages');
+    // Make sure we remove all previous listeners.
+    messagesRef.off();
+
+    // Saves a new message on the Firebase DB.
+    $scope.saveMessage = function(message) {
+      // Add a new message entry to the Firebase Database.
+      console.log(message.text)
+       messagesRef.push({
+          name: $scope.user.displayName,
+          text: message.text,
+          photoUrl: $scope.user.photoURL || '/images/profile_placeholder.png'
+        }).then(function() {
+          // Clear message text field and SEND button state.
+          console.log("sent")
+
+        }.bind(this)).catch(function(error) {
+          console.error('Error writing new message to Firebase Database', error);
+        });
+
+    };
+
+    var messageList = document.getElementById('messages');
+    var loadMessages = function() {
+      // Loads the last 12 messages and listen for new ones.
+      var setMessage = function(data) {
+        var val = data.val();
+        displayMessage(data.key, val.name, val.text, val.imageUrl);
+      }.bind(this);
+      messagesRef.limitToLast(12).on('child_added', setMessage);
+      messagesRef.limitToLast(12).on('child_changed', setMessage);
+    };
+
+    var MESSAGE_TEMPLATE =
+      '<div class="message-container">' +
+      '<div class="message"></div>' +
+      '</div>';
+
+    var displayMessage = function(key, name, text, imageUri) {
+      var div = document.getElementById(key);
+      // If an element for that message does not exists yet we create it.
+      if (!div) {
+        var container = document.createElement('div');
+        container.innerHTML = MESSAGE_TEMPLATE;
+        div = container.firstChild;
+        div.setAttribute('id', key);
+        messageList.appendChild(div);
+      }
+      var messageElement = div.querySelector('.message');
+      if (text) { // If the message is text.
+        messageElement.textContent = text;
+        // Replace all line breaks by <br>.
+        messageElement.innerHTML = messageElement.innerHTML.replace(/\n/g, '<br>');
+      } else if (imageUri) { // If the message is an image.
+        var image = document.createElement('img');
+        image.addEventListener('load', function() {
+          messageList.scrollTop = messageList.scrollHeight;
+        }.bind(this));
+        //this.setImageUrl(imageUri, image);
+        messageElement.innerHTML = '';
+        messageElement.appendChild(image);
+      }
+      // Show the card fading-in.
+      setTimeout(function() {div.classList.add('visible')}, 1);
+      messageList.scrollTop = messageList.scrollHeight;
+    };
+
+    //load messages
+    loadMessages()
+
   })
 
   .controller('LoginCtrl', function ($scope, $stateParams, $firebaseAuth, $state) {
@@ -219,7 +307,7 @@ angular.module('starter.controllers', ['firebase'])
       auth.signInWithRedirect(provider);
               console.log("login called2")
       firebase.auth().getRedirectResult().then(function(result) {
-                                               
+
                                                console.log("result", result)
         if (result.credential) {
           // This gives you a Facebook Access Token. You can use it to access the Facebook API.
@@ -228,7 +316,7 @@ angular.module('starter.controllers', ['firebase'])
         }
         // The signed-in user info.
         var user = result.user;
-                                               
+
         $state.go('tab.dash')
       }).catch(function(error) {
         // Handle Errors here.

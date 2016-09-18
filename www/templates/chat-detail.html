@@ -4,16 +4,31 @@
   The FriendsCtrl pulls data from the Friends service (service.js)
   The Friends service returns an array of friend data
 -->
-<ion-view view-title="{{chat.name}}">
+<ion-view view-title="{{user.displayName}}">
 
   <ion-nav-buttons side="right">
-    <img ng-src="{{chat.face}}" style="
+    <img ng-src="{{user.photoURL}}" style="
     max-width: 35px;
-    max-height: 35px;
+    max-height: 65px;
     border-radius: 50%;">
   </ion-nav-buttons>
 
   <ion-content class="padding">
+
+
+    <div id="messages" style="height: 450px;">
+
+    </div>
+
+
+    <form ng-submit="saveMessage(message)">
+      <label class="item item-input">
+        <input ng-model="message.text" placeholder="Enter message" style="border: 1px #a7a0a0 solid;width: 80%;">
+      </label>
+      <button type="submit" style="border: 1px solid;margin-top: 10px;">
+        Send
+      </button>
+    </form>
 
   </ion-content>
 </ion-view>
