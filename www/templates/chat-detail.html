@@ -6,6 +6,12 @@
 -->
 <ion-view view-title="{{user.displayName}}">
 
+  <ion-nav-buttons side="left">
+    <span ng-click="gotoChats()" style="font-size: 18px;margin-top: 13%;">
+      <i class="ion-chevron-left"></i> Chats
+    </span>
+  </ion-nav-buttons>
+
   <ion-nav-buttons side="right">
     <img ng-src="{{user.photoURL}}" style="
     max-width: 35px;
@@ -15,20 +21,29 @@
 
   <ion-content class="padding">
 
+    <ol id="messageList" class="chat">
+      <!--<li class="self">
+        <div class="msg">
+          <p>HI<time>20:18 PM</time></p>
+        </div>
+      </li>
+      <li class="other">
+        <div class="msg">
+          <p>whats up?
+            <time>20:18 AM</time>
+          </p>
+        </div>
+      </li>
+      <li class="self">
+        <div class="msg">
+          <p>HI whats up?
+            <time>20:18 PM</time></p>
+        </div>
+      </li>-->
+    </ol>
 
-    <div id="messages" style="height: 450px;">
-
-    </div>
-
-
-    <form ng-submit="saveMessage(message)">
-      <label class="item item-input">
-        <input ng-model="message.text" placeholder="Enter message" style="border: 1px #a7a0a0 solid;width: 80%;">
-      </label>
-      <button type="submit" style="border: 1px solid;margin-top: 10px;">
-        Send
-      </button>
-    </form>
+    <input ng-model="message.text" placeholder=" Enter message" class="messageText" id="messageText"/>
+    <a class="search-link"  href="" ng-click="saveMessage(message)"><span class="send_icon">Send</span></a>
 
   </ion-content>
 </ion-view>
