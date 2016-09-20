@@ -48,6 +48,20 @@ angular.module('starter.controllers', ['firebase'])
       //facebook profile info get end
 
 
+      //update location start
+      // Create a Firebase reference where GeoFire will store its information
+      var firebaseRef = firebase.database().ref();
+      // Create a GeoFire index
+      var geoFire = new GeoFire(firebaseRef);
+
+      geoFire.set($scope.user.uid, [lat, long]).then(function() {
+        console.log("Provided key has been added to GeoFire");
+      }, function(error) {
+        console.log("Error: " + error);
+      });
+      //update location end
+
+
       var map = new google.maps.Map(document.getElementById("map"), mapOptions);
       $scope.currentLocation = new google.maps.Marker({
         position: myLatlng,
@@ -360,6 +374,14 @@ angular.module('starter.controllers', ['firebase'])
         // User signed in!
         var uid = user.uid;
         console.log(user)
+
+        firebase.database().ref('users/' + user.uid).set({
+          displayName: user.displayName,
+          photoURL:user.photoURL,
+          contacts: [],
+          status: "active"
+        });
+
         $state.go('tab.dash')
       } else {
         // User logged out
