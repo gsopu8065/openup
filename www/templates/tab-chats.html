@@ -1,6 +1,9 @@
 <ion-view view-title="Chats">
   <ion-content>
     <ion-list>
+      <div ng-show="chats.length == 0" class="nocontacts-error">
+        No Contacts Find
+      </div>
       <ion-item class="item-remove-animate item-avatar item-icon-right" ng-repeat="chat in chats" type="item-text-wrap" href="#/tab/chats/{{chat.id}}">
         <img ng-src="{{chat.face}}">
         <h2>{{chat.name}}</h2>

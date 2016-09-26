@@ -54,11 +54,14 @@ angular.module('starter.controllers', ['firebase'])
       // Create a GeoFire index
       var geoFire = new GeoFire(firebaseRef);
 
-      geoFire.set($scope.user.uid, [lat, long]).then(function() {
-        console.log("Provided key has been added to GeoFire");
-      }, function(error) {
-        console.log("Error: " + error);
-      });
+      if($scope.user){
+        geoFire.set($scope.user.uid, [lat, long]).then(function() {
+          console.log("Provided key has been added to GeoFire");
+        }, function(error) {
+          console.log("Error: " + error);
+        });
+      }
+
       //update location end
 
 
@@ -212,7 +215,21 @@ angular.module('starter.controllers', ['firebase'])
     //$scope.$on('$ionicView.enter', function(e) {
     //});
 
-    $scope.chats = Chats.all();
+    //get contacts list start
+    var user = firebase.auth().currentUser;
+    if(user){
+      firebase.database().ref('/users/' + user.uid).once('value').then(function(user) {
+        var userDetails = user.val();
+        if(userDetails.contacts){
+          $scope.chats = userDetails.contacts;
+        }
+        else {
+          $scope.chats = [];
+        }
+      });
+
+    }
+
     $scope.remove = function (chat) {
       Chats.remove(chat);
     };
@@ -370,6 +387,7 @@ angular.module('starter.controllers', ['firebase'])
 
     //auto login
     auth.onAuthStateChanged(function (user) {
+
       if (user) {
         // User signed in!
         var uid = user.uid;

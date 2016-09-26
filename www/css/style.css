@@ -24,3 +24,11 @@
   right: 0;
   top: 0;
 }
+
+
+.nocontacts-error{
+  text-align: center;
+  font-size: 16px;
+  color: cadetblue;
+  font-weight: 900;
+}
