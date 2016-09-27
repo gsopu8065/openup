@@ -52,34 +52,32 @@ angular.module('starter.controllers', ['firebase'])
       // Create a Firebase reference where GeoFire will store its information
       var firebaseRef = firebase.database().ref();
       // Create a GeoFire index
-      var geoFire = new GeoFire(firebaseRef);
+      $scope.geoFire = new GeoFire(firebaseRef);
 
-      if($scope.user){
-        geoFire.set($scope.user.uid, [lat, long]).then(function() {
+      if ($scope.user) {
+        $scope.geoFire.set($scope.user.uid, [lat, long]).then(function () {
           console.log("Provided key has been added to GeoFire");
-        }, function(error) {
+        }, function (error) {
           console.log("Error: " + error);
+        });
+        var map = new google.maps.Map(document.getElementById("map"), mapOptions);
+        $scope.currentLocation = new google.maps.Marker({
+          position: myLatlng,
+          map: map,
+          icon: {
+            url: $scope.user.photoURL,
+            scaledSize: new google.maps.Size(38, 38),
+            scale: 10
+          },
+          optimized: false
         });
       }
 
       //update location end
 
-
-      var map = new google.maps.Map(document.getElementById("map"), mapOptions);
-      $scope.currentLocation = new google.maps.Marker({
-        position: myLatlng,
-        map: map,
-        icon: {
-          url: $scope.user.photoURL,
-          scaledSize: new google.maps.Size(38, 38),
-          scale: 10
-        },
-        optimized: false
-      });
-
-      $scope.currentLocation.addListener('click', function () {
-        $state.go('firstChat')
-      });
+      /*$scope.currentLocation.addListener('click', function () {
+       $state.go('firstChat')
+       });*/
 
       var drawingManager = new google.maps.drawing.DrawingManager({
         drawingControl: true,
@@ -123,72 +121,87 @@ angular.module('starter.controllers', ['firebase'])
 
 
     //commment for a while
-    /*var watch = $cordovaGeolocation.watchPosition(watchOptions);
-     $scope.nearByPeople = [];
-     watch.then(
-     null,
-     function (err) {
-     // error
-     console.log('error in watch');
-     console.log('code: ' + err.code + '\n' +
-     'message: ' + err.message + '\n');
-     },
-     function (position) {
-     var lat = position.coords.latitude
-     var long = position.coords.longitude
-     var newPosition = new google.maps.LatLng(lat, long)
-     if ($scope.currentLocation.getPosition().lat().toFixed(4) != newPosition.lat().toFixed(4) || $scope.currentLocation.getPosition().lng().toFixed(4) != newPosition.lng().toFixed(4)) {
-     $scope.currentLocation.setPosition(newPosition);
-     $scope.map.setCenter(newPosition)
-     $scope.circle.setCenter(newPosition)
-     }
+    var watch = $cordovaGeolocation.watchPosition(watchOptions);
+    $scope.nearByPeople = [];
+    watch.then(
+      null,
+      function (err) {
+        // error
+        console.log('error in watch');
+        console.log('code: ' + err.code + '\n' +
+          'message: ' + err.message + '\n');
+      },
+      function (position) {
+        var lat = position.coords.latitude
+        var long = position.coords.longitude
+        var newPosition = new google.maps.LatLng(lat, long)
+        if ($scope.currentLocation.getPosition().lat().toFixed(4) != newPosition.lat().toFixed(4) || $scope.currentLocation.getPosition().lng().toFixed(4) != newPosition.lng().toFixed(4)) {
+          $scope.currentLocation.setPosition(newPosition);
+          $scope.map.setCenter(newPosition)
+          $scope.circle.setCenter(newPosition)
+        }
 
-     //read map service
-     MapCtrl.getNearByPeople().success(function (response) {
-     //update nearby people location
-     var newList = []
-     angular.forEach(response, function (res, index) {
-     var result_find = $filter('filter')($scope.nearByPeople, {id: res.id});
-     if (result_find.length == 0) {
-     newList.push(res)
-     }
-     else {
+        //read map service
+        //MapCtrl.getNearByPeople()
+        var geoQuery = $scope.geoFire.query({
+          center: [lat, long],
+          radius: 0.15
+        })
 
-     result_find[0].marker.setPosition(new google.maps.LatLng(res.location.latitude, res.location.longitude))
-     }
-     });
+        var onKeyEnteredRegistration = geoQuery.on("key_entered", function(key, location) {
+          console.log(key + " entered the query. Hi " + key + "!");
+        });
 
-     //delete outside users
-     angular.forEach($scope.nearByPeople, function (res, index) {
-     var result_find = $filter('filter')(response, {id: res.id});
-     if (result_find.length == 0) {
-     $scope.nearByPeople[index].marker.setMap(null);
-     }
-     });
+        var onReadyRegistration = geoQuery.on("ready", function() {
+          console.log("*** 'ready' event fired - cancelling query ***");
+          geoQuery.cancel();
+        })
 
-     angular.forEach(newList, function (res, index) {
-     var marker = new google.maps.Marker({
-     position: new google.maps.LatLng(res.location.latitude, res.location.longitude),
-     map: $scope.map,
-     icon: {
-     url: res.face,
-     scaledSize: new google.maps.Size(32, 32),
-     scale: 10
-     },
-     optimized: false
-     });
+          /*.success(function (response) {
+          //update nearby people location
+          var newList = []
+          angular.forEach(response, function (res, index) {
+            var result_find = $filter('filter')($scope.nearByPeople, {id: res.id});
+            if (result_find.length == 0) {
+              newList.push(res)
+            }
+            else {
 
-     marker.addListener('click', function () {
-     //show images
-     $scope.aImages = res.allImages;
-     $scope.openModal();
-     });
-     $scope.nearByPeople.push({id: res.id, marker: marker})
-     });
-     })
+              result_find[0].marker.setPosition(new google.maps.LatLng(res.location.latitude, res.location.longitude))
+            }
+          });
 
-     });*/
-    //$cordovaGeolocation.clearWatch(watch)
+          //delete outside users
+          angular.forEach($scope.nearByPeople, function (res, index) {
+            var result_find = $filter('filter')(response, {id: res.id});
+            if (result_find.length == 0) {
+              $scope.nearByPeople[index].marker.setMap(null);
+            }
+          });
+
+          angular.forEach(newList, function (res, index) {
+            var marker = new google.maps.Marker({
+              position: new google.maps.LatLng(res.location.latitude, res.location.longitude),
+              map: $scope.map,
+              icon: {
+                url: res.face,
+                scaledSize: new google.maps.Size(32, 32),
+                scale: 10
+              },
+              optimized: false
+            });
+
+            marker.addListener('click', function () {
+              //show images
+              $scope.aImages = res.allImages;
+              $scope.openModal();
+            });
+            $scope.nearByPeople.push({id: res.id, marker: marker})
+          });
+        })*/
+
+      });
+    $cordovaGeolocation.clearWatch(watch)
 
     //modal open
     $ionicModal.fromTemplateUrl('templates/user-detail.html', {
@@ -217,10 +230,10 @@ angular.module('starter.controllers', ['firebase'])
 
     //get contacts list start
     var user = firebase.auth().currentUser;
-    if(user){
-      firebase.database().ref('/users/' + user.uid).once('value').then(function(user) {
+    if (user) {
+      firebase.database().ref('/users/' + user.uid).once('value').then(function (user) {
         var userDetails = user.val();
-        if(userDetails.contacts){
+        if (userDetails.contacts) {
           $scope.chats = userDetails.contacts;
         }
         else {
@@ -318,7 +331,7 @@ angular.module('starter.controllers', ['firebase'])
       var hour = date.getHours() - (date.getHours() >= 12 ? 12 : 0);
       var period = date.getHours() >= 12 ? 'PM' : 'AM';
 
-      timeElement.textContent = hour +':' + date.getMinutes() + ' ' +period
+      timeElement.textContent = hour + ':' + date.getMinutes() + ' ' + period
       pDiv.appendChild(timeElement)
       // Show the card fading-in.
       setTimeout(function () {
@@ -395,7 +408,7 @@ angular.module('starter.controllers', ['firebase'])
 
         firebase.database().ref('users/' + user.uid).set({
           displayName: user.displayName,
-          photoURL:user.photoURL,
+          photoURL: user.photoURL,
           contacts: [],
           status: "active"
         });
