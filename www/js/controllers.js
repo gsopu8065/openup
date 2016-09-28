@@ -53,14 +53,14 @@ angular.module('starter.controllers', ['firebase'])
       var firebaseRef = firebase.database().ref();
       // Create a GeoFire index
       $scope.geoFire = new GeoFire(firebaseRef);
-
+      var map = new google.maps.Map(document.getElementById("map"), mapOptions);
       if ($scope.user) {
         $scope.geoFire.set($scope.user.uid, [lat, long]).then(function () {
           console.log("Provided key has been added to GeoFire");
         }, function (error) {
           console.log("Error: " + error);
         });
-        var map = new google.maps.Map(document.getElementById("map"), mapOptions);
+
         $scope.currentLocation = new google.maps.Marker({
           position: myLatlng,
           map: map,
@@ -135,7 +135,7 @@ angular.module('starter.controllers', ['firebase'])
         var lat = position.coords.latitude
         var long = position.coords.longitude
         var newPosition = new google.maps.LatLng(lat, long)
-        if ($scope.currentLocation.getPosition().lat().toFixed(4) != newPosition.lat().toFixed(4) || $scope.currentLocation.getPosition().lng().toFixed(4) != newPosition.lng().toFixed(4)) {
+        if ($scope.currentLocation && $scope.currentLocation.getPosition().lat().toFixed(4) != newPosition.lat().toFixed(4) || $scope.currentLocation.getPosition().lng().toFixed(4) != newPosition.lng().toFixed(4)) {
           $scope.currentLocation.setPosition(newPosition);
           $scope.map.setCenter(newPosition)
           $scope.circle.setCenter(newPosition)
@@ -148,12 +148,46 @@ angular.module('starter.controllers', ['firebase'])
           radius: 0.15
         })
 
+        var newList = []
         var onKeyEnteredRegistration = geoQuery.on("key_entered", function(key, location) {
           console.log(key + " entered the query. Hi " + key + "!");
+          //update nearby people location
+          var result_find = $filter('filter')($scope.nearByPeople, {id: key});
+          if (result_find.length == 0) {
+            newList.push({id: key,location:location})
+          }
+          else {
+
+            result_find[0].marker.setPosition(new google.maps.LatLng(location.latitude, location.longitude))
+          }
+
+          //delete outside users
+          angular.forEach($scope.nearByPeople, function (res, index) {
+            var result_find = $filter('filter')(newList, {id: res.id});
+            if (result_find.length == 0) {
+              $scope.nearByPeople[index].marker.setMap(null);
+            }
+          });
+
+          angular.forEach(newList, function (res, index) {
+            var marker = new google.maps.Marker({
+              position: new google.maps.LatLng(res.location.latitude, res.location.longitude),
+              map: $scope.map,
+
+              optimized: false
+            });
+
+            marker.addListener('click', function () {
+              //show images
+              $scope.aImages = res.allImages;
+              $scope.openModal();
+            });
+            $scope.nearByPeople.push({id: res.id, marker: marker})
+          });
+
         });
 
         var onReadyRegistration = geoQuery.on("ready", function() {
-          console.log("*** 'ready' event fired - cancelling query ***");
           geoQuery.cancel();
         })
 
