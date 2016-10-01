@@ -1,6 +1,6 @@
 angular.module('starter.controllers', ['firebase'])
 
-  .controller('DashCtrl', function ($scope, $cordovaGeolocation, $ionicPlatform, $ionicLoading, $ionicModal, $ionicSlideBoxDelegate, $filter, MapCtrl, $state) {
+  .controller('DashCtrl', function ($scope, $cordovaGeolocation, $ionicPlatform, $ionicLoading, $ionicModal, $ionicSlideBoxDelegate, $filter, $state) {
 
     var googleMapStyles = [{
       "featureType": "landscape.natural",
@@ -28,7 +28,7 @@ angular.module('starter.controllers', ['firebase'])
       template: '<ion-spinner icon="bubbles"></ion-spinner><br/>Acquiring location!'
     });
 
-    var posOptions = {timeout: 10000, enableHighAccuracy: false};
+    var posOptions = {timeout: 100000, enableHighAccuracy: false};
 
     $cordovaGeolocation.getCurrentPosition(posOptions).then(function (position) {
       var lat = position.coords.latitude;
@@ -60,33 +60,16 @@ angular.module('starter.controllers', ['firebase'])
         }, function (error) {
           console.log("Error: " + error);
         });
-
-        $scope.currentLocation = new google.maps.Marker({
-          position: myLatlng,
-          map: map,
-          icon: {
-            url: $scope.user.photoURL,
-            scaledSize: new google.maps.Size(38, 38),
-            scale: 10
-          },
-          optimized: false
-        });
       }
-
+      else {
+        $state.go('login')
+      }
       //update location end
 
       /*$scope.currentLocation.addListener('click', function () {
        $state.go('firstChat')
        });*/
 
-      var drawingManager = new google.maps.drawing.DrawingManager({
-        drawingControl: true,
-        drawingControlOptions: {
-          position: google.maps.ControlPosition.TOP_CENTER,
-          drawingModes: ['polygon']
-        }
-      });
-      drawingManager.setMap(map);
       map.setOptions({draggable: true, zoomControl: true});
       $scope.map = map;
       $ionicLoading.hide();
@@ -102,140 +85,40 @@ angular.module('starter.controllers', ['firebase'])
         center: myLatlng
       });
 
-      //overlay css for marker
-      var myoverlay = new google.maps.OverlayView();
-      myoverlay.draw = function () {
-        this.getPanes().markerLayer.id = 'markerLayer';
-      };
-      myoverlay.setMap($scope.map);
+      //read map service 
+      var geoQuery = $scope.geoFire.query({center: [lat, long], radius: 0.15})
+      var onKeyEnteredRegistration = geoQuery.on("key_entered", function (key, location) {
+
+        //for each near by user
+        if($scope.user.uid != key){
+          firebase.database().ref('/users/' + key).once('value').then(function (user) {
+            var userDetails = user.val();
+            var marker = new google.maps.Marker({
+              position: new google.maps.LatLng(location[0], location[1]),
+              map: map,
+              icon: {
+                url: userDetails.photoURL,
+                scaledSize: new google.maps.Size(38, 38),
+                scale: 10
+              },
+              optimized: false
+            })
+            marker.addListener('click', function () { 
+              $scope.openModal(userDetails); 
+            });
+          });
+        }
+      })
+      var onReadyRegistration = geoQuery.on("ready", function () {
+        geoQuery.cancel();
+      })
+
 
     }, function (err) {
       $ionicLoading.hide();
       console.log(err);
     });
 
-    var watchOptions = {
-      timeout: 10000,
-      enableHighAccuracy: false // may cause errors if true
-    };
-
-
-    //commment for a while
-    var watch = $cordovaGeolocation.watchPosition(watchOptions);
-    $scope.nearByPeople = [];
-    watch.then(
-      null,
-      function (err) {
-        // error
-        console.log('error in watch');
-        console.log('code: ' + err.code + '\n' +
-          'message: ' + err.message + '\n');
-      },
-      function (position) {
-        var lat = position.coords.latitude
-        var long = position.coords.longitude
-        var newPosition = new google.maps.LatLng(lat, long)
-        if ($scope.currentLocation && $scope.currentLocation.getPosition().lat().toFixed(4) != newPosition.lat().toFixed(4) || $scope.currentLocation.getPosition().lng().toFixed(4) != newPosition.lng().toFixed(4)) {
-          $scope.currentLocation.setPosition(newPosition);
-          $scope.map.setCenter(newPosition)
-          $scope.circle.setCenter(newPosition)
-        }
-
-        //read map service
-        //MapCtrl.getNearByPeople()
-        var geoQuery = $scope.geoFire.query({
-          center: [lat, long],
-          radius: 0.15
-        })
-
-        var newList = []
-        var onKeyEnteredRegistration = geoQuery.on("key_entered", function(key, location) {
-          console.log(key + " entered the query. Hi " + key + "!");
-          //update nearby people location
-          var result_find = $filter('filter')($scope.nearByPeople, {id: key});
-          if (result_find.length == 0) {
-            newList.push({id: key,location:location})
-          }
-          else {
-
-            result_find[0].marker.setPosition(new google.maps.LatLng(location.latitude, location.longitude))
-          }
-
-          //delete outside users
-          angular.forEach($scope.nearByPeople, function (res, index) {
-            var result_find = $filter('filter')(newList, {id: res.id});
-            if (result_find.length == 0) {
-              $scope.nearByPeople[index].marker.setMap(null);
-            }
-          });
-
-          angular.forEach(newList, function (res, index) {
-            var marker = new google.maps.Marker({
-              position: new google.maps.LatLng(res.location.latitude, res.location.longitude),
-              map: $scope.map,
-
-              optimized: false
-            });
-
-            marker.addListener('click', function () {
-              //show images
-              $scope.aImages = res.allImages;
-              $scope.openModal();
-            });
-            $scope.nearByPeople.push({id: res.id, marker: marker})
-          });
-
-        });
-
-        var onReadyRegistration = geoQuery.on("ready", function() {
-          geoQuery.cancel();
-        })
-
-          /*.success(function (response) {
-          //update nearby people location
-          var newList = []
-          angular.forEach(response, function (res, index) {
-            var result_find = $filter('filter')($scope.nearByPeople, {id: res.id});
-            if (result_find.length == 0) {
-              newList.push(res)
-            }
-            else {
-
-              result_find[0].marker.setPosition(new google.maps.LatLng(res.location.latitude, res.location.longitude))
-            }
-          });
-
-          //delete outside users
-          angular.forEach($scope.nearByPeople, function (res, index) {
-            var result_find = $filter('filter')(response, {id: res.id});
-            if (result_find.length == 0) {
-              $scope.nearByPeople[index].marker.setMap(null);
-            }
-          });
-
-          angular.forEach(newList, function (res, index) {
-            var marker = new google.maps.Marker({
-              position: new google.maps.LatLng(res.location.latitude, res.location.longitude),
-              map: $scope.map,
-              icon: {
-                url: res.face,
-                scaledSize: new google.maps.Size(32, 32),
-                scale: 10
-              },
-              optimized: false
-            });
-
-            marker.addListener('click', function () {
-              //show images
-              $scope.aImages = res.allImages;
-              $scope.openModal();
-            });
-            $scope.nearByPeople.push({id: res.id, marker: marker})
-          });
-        })*/
-
-      });
-    $cordovaGeolocation.clearWatch(watch)
 
     //modal open
     $ionicModal.fromTemplateUrl('templates/user-detail.html', {
@@ -244,7 +127,8 @@ angular.module('starter.controllers', ['firebase'])
     }).then(function (modal) {
       $scope.modal = modal;
     });
-    $scope.openModal = function () {
+    $scope.openModal = function (userDetails) {
+      $scope.aImages = userDetails.photoURL;
       $scope.modal.show();
       $ionicSlideBoxDelegate.slide(0);
     };
@@ -415,8 +299,23 @@ angular.module('starter.controllers', ['firebase'])
         }
         // The signed-in user info.
         var user = result.user;
+        if (user) {
+          // User signed in!
+          var uid = user.uid;
+          console.log(user)
+          firebase.database().ref('users/' + user.uid).set({
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+            contacts: [],
+            status: "active"
+          });
 
-        $state.go('tab.dash')
+          $state.go('tab.dash')
+        } else {
+          // User logged out
+          console.log("User logged out")
+          $state.go('login')
+        }
       }).catch(function (error) {
         // Handle Errors here.
         var errorCode = error.code;
@@ -436,21 +335,11 @@ angular.module('starter.controllers', ['firebase'])
     auth.onAuthStateChanged(function (user) {
 
       if (user) {
-        // User signed in!
-        var uid = user.uid;
-        console.log(user)
-
-        firebase.database().ref('users/' + user.uid).set({
-          displayName: user.displayName,
-          photoURL: user.photoURL,
-          contacts: [],
-          status: "active"
-        });
-
         $state.go('tab.dash')
       } else {
         // User logged out
         console.log("User logged out")
+        $state.go('login')
       }
     });
 
