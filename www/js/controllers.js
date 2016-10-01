@@ -90,7 +90,7 @@ angular.module('starter.controllers', ['firebase'])
       var onKeyEnteredRegistration = geoQuery.on("key_entered", function (key, location) {
 
         //for each near by user
-        if($scope.user.uid != key){
+        if ($scope.user.uid != key) {
           firebase.database().ref('/users/' + key).once('value').then(function (user) {
             var userDetails = user.val();
             var marker = new google.maps.Marker({
@@ -103,8 +103,8 @@ angular.module('starter.controllers', ['firebase'])
               },
               optimized: false
             })
-            marker.addListener('click', function () { 
-              $scope.openModal(userDetails); 
+            marker.addListener('click', function () {
+              $scope.openModal(key, userDetails);
             });
           });
         }
@@ -127,12 +127,17 @@ angular.module('starter.controllers', ['firebase'])
     }).then(function (modal) {
       $scope.modal = modal;
     });
-    $scope.openModal = function (userDetails) {
+    $scope.openModal = function (userId, userDetails) {
+      $scope.chatUserId = userId;
       $scope.aImages = userDetails.photoURL;
       $scope.modal.show();
       $ionicSlideBoxDelegate.slide(0);
     };
     $scope.closeModal = function () {
+      $scope.modal.hide();
+    };
+    $scope.startConversation = function () {
+      $state.go('firstChat', {chatId: $scope.chatUserId})
       $scope.modal.hide();
     };
 
@@ -174,10 +179,23 @@ angular.module('starter.controllers', ['firebase'])
     //dom end
 
     $scope.user = firebase.auth().currentUser;
+    var dbName = ""
+    if ($stateParams.chatId < $scope.user.uid) {
+      dbName = $stateParams.chatId + $scope.user.uid
+    }
+    else {
+      dbName = $scope.user.uid + $stateParams.chatId
+    }
 
-    var messagesRef = firebase.database().ref('messages');
+
+    var messagesRef = firebase.database().ref(dbName);
     // Make sure we remove all previous listeners.
     messagesRef.off();
+
+    var firstMessage = true;
+    messagesRef.once("value", function (snapshot) {
+      firstMessage = !snapshot.exists();
+    })
 
     $scope.gotoChats = function () {
       console.log("called")
@@ -197,6 +215,45 @@ angular.module('starter.controllers', ['firebase'])
           // Clear message text field and SEND button state.
           console.log("sent")
           messageText.value = '';
+
+          //save in sender and receiver contacts start
+          if (firstMessage) {
+
+            var chatUserContactDetails = {
+              messageDb: dbName,
+              contactid: $scope.user.uid,
+              displayName: $scope.user.displayName,
+              photoURL: $scope.user.photoURL,
+              status: "active"
+            }
+
+            firebase.database().ref('users/' + $stateParams.chatId).once('value').then(function (userQueryRes) {
+              var chatUserContacts = userQueryRes.val().contacts || [];
+              chatUserContacts.push(chatUserContactDetails)
+              firebase.database().ref('users/' + $stateParams.chatId).update({
+                contacts: chatUserContacts
+              })
+
+              var currentUserContactDetails = {
+                messageDb: dbName,
+                contactid: userQueryRes.val().uid,
+                displayName: userQueryRes.val().displayName,
+                photoURL: userQueryRes.val().photoURL,
+                status: "active"
+              }
+
+              firebase.database().ref('users/' + $scope.user.uid).once('value').then(function (currentUserQueryRes) {
+                var currentUserContacts = currentUserQueryRes.val().contacts || [];
+                currentUserContacts.push(currentUserContactDetails)
+                firebase.database().ref('users/' + $scope.user.uid).update({
+                  contacts: currentUserContacts
+                })
+              })
+            });
+
+          }
+          //save in sender and receiver contacts end
+
         }.bind(this)).catch(function (error) {
           console.error('Error writing new message to Firebase Database', error);
         });
