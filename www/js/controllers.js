@@ -210,7 +210,8 @@ angular.module('starter.controllers', ['firebase'])
         messagesRef.push({
           name: $scope.user.displayName,
           text: message.text,
-          timestamp: new Date().getTime()
+          timestamp: new Date().getTime(),
+          sender: $scope.user.uid
         }).then(function () {
           // Clear message text field and SEND button state.
           console.log("sent")
@@ -236,7 +237,7 @@ angular.module('starter.controllers', ['firebase'])
 
               var currentUserContactDetails = {
                 messageDb: dbName,
-                contactid: userQueryRes.val().uid,
+                contactid: $stateParams.chatId,
                 displayName: userQueryRes.val().displayName,
                 photoURL: userQueryRes.val().photoURL,
                 status: "active"
@@ -245,6 +246,7 @@ angular.module('starter.controllers', ['firebase'])
               firebase.database().ref('users/' + $scope.user.uid).once('value').then(function (currentUserQueryRes) {
                 var currentUserContacts = currentUserQueryRes.val().contacts || [];
                 currentUserContacts.push(currentUserContactDetails)
+                console.log(currentUserContacts);
                 firebase.database().ref('users/' + $scope.user.uid).update({
                   contacts: currentUserContacts
                 })
@@ -265,7 +267,7 @@ angular.module('starter.controllers', ['firebase'])
       // Loads the last 12 messages and listen for new ones.
       var setMessage = function (data) {
         var val = data.val();
-        displayMessage(val.text, val.timestamp, val.imageUrl);
+        displayMessage(val.text, val.timestamp, val.sender, val.imageUrl);
       }.bind(this);
       messagesRef.limitToLast(12).on('child_added', setMessage);
       messagesRef.limitToLast(12).on('child_changed', setMessage);
@@ -276,14 +278,18 @@ angular.module('starter.controllers', ['firebase'])
       '<p></p>' +
       '</div>';
 
-    var displayMessage = function (text, timestamp, imageUri) {
-
-      console.log(timestamp)
+    var displayMessage = function (text, timestamp, sender, imageUri) {
 
       var container = document.createElement('li');
       container.innerHTML = MESSAGE_TEMPLATE;
       var pDiv = container.firstChild.firstChild;
-      container.setAttribute('class', "self");
+      if($scope.user.uid == sender){
+        container.setAttribute('class', "self");
+      }
+      else {
+        container.setAttribute('class', "other");
+      }
+
       messageList.appendChild(container);
 
       // If the message is text.

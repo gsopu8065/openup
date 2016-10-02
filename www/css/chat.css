@@ -118,7 +118,6 @@
   padding: 0px;
   margin: 0px;
   outline: none;
-  position: absolute;
   left: 85%;
   top: 8px;
   z-index: 10;
@@ -130,7 +129,7 @@
   z-index: 99;
   background: #fafafa;
   padding-left: 10px;
-  width: 98%;
+  width: 87%;
   border-radius: 8px;
 }
 
