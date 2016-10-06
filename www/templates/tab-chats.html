@@ -4,7 +4,7 @@
       <div ng-show="chats.length == 0" class="nocontacts-error">
         No Contacts Find
       </div>
-      <ion-item class="item-remove-animate item-avatar item-icon-right" ng-repeat="chat in chats" type="item-text-wrap" href="#/tab/chats/{{chat.contactid}}">
+      <ion-item class="item-remove-animate item-avatar item-icon-right" ng-repeat="chat in chats" type="item-text-wrap" href="#/firstChat/{{chat.contactid}}">
         <img ng-src="{{chat.photoURL}}">
         <h2>{{chat.displayName}}</h2>
         <p>{{chat.status}}</p>

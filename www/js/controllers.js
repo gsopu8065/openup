@@ -148,16 +148,18 @@ angular.module('starter.controllers', ['firebase'])
     // To listen for when this page is active (for example, to refresh data),
     // listen for the $ionicView.enter event:
     //
-    //$scope.$on('$ionicView.enter', function(e) {
-    //});
-
     //get contacts list start
+    /*$scope.$on('$ionicView.enter', function(e) {
+     console.log($scope.chats)
+     });*/
+
     var user = firebase.auth().currentUser;
     if (user) {
       firebase.database().ref('/users/' + user.uid).once('value').then(function (user) {
         var userDetails = user.val();
         if (userDetails.contacts) {
           $scope.chats = userDetails.contacts;
+          console.log($scope.chats)
         }
         else {
           $scope.chats = [];
@@ -165,6 +167,7 @@ angular.module('starter.controllers', ['firebase'])
       });
 
     }
+
 
     $scope.remove = function (chat) {
       Chats.remove(chat);
@@ -192,13 +195,8 @@ angular.module('starter.controllers', ['firebase'])
     // Make sure we remove all previous listeners.
     messagesRef.off();
 
-    var firstMessage = true;
-    messagesRef.once("value", function (snapshot) {
-      firstMessage = !snapshot.exists();
-    })
 
     $scope.gotoChats = function () {
-      console.log("called")
       $state.go('tab.chats')
     }
 
@@ -207,19 +205,19 @@ angular.module('starter.controllers', ['firebase'])
       // Add a new message entry to the Firebase Database.
       if (message) {
         console.log(message.text)
-        messagesRef.push({
-          name: $scope.user.displayName,
-          text: message.text,
-          timestamp: new Date().getTime(),
-          sender: $scope.user.uid
-        }).then(function () {
-          // Clear message text field and SEND button state.
-          console.log("sent")
-          messageText.value = '';
+        /*messagesRef.push({
+         name: $scope.user.displayName,
+         text: message.text,
+         timestamp: new Date().getTime(),
+         sender: $scope.user.uid
+         }).then(function () {
+         // Clear message text field and SEND button state.
+         console.log("sent")
+         messageText.value = '';*/
 
-          //save in sender and receiver contacts start
-          if (firstMessage) {
-
+        //save in sender and receiver contacts start
+        messagesRef.once("value", function (snapshot) {
+          if (!snapshot.exists()) {
             var chatUserContactDetails = {
               messageDb: dbName,
               contactid: $scope.user.uid,
@@ -252,13 +250,27 @@ angular.module('starter.controllers', ['firebase'])
                 })
               })
             });
-
           }
-          //save in sender and receiver contacts end
 
-        }.bind(this)).catch(function (error) {
-          console.error('Error writing new message to Firebase Database', error);
-        });
+          messagesRef.push({
+            name: $scope.user.displayName,
+            text: message.text,
+            timestamp: new Date().getTime(),
+            sender: $scope.user.uid
+          }).then(function () {
+            // Clear message text field and SEND button state.
+            console.log("sent")
+            messageText.value = '';
+          }.bind(this)).catch(function (error) {
+            console.error('Error writing new message to Firebase Database', error);
+          });
+
+        })
+        //save in sender and receiver contacts end
+
+        /*}.bind(this)).catch(function (error) {
+         console.error('Error writing new message to Firebase Database', error);
+         });*/
       }
 
     };
@@ -283,7 +295,7 @@ angular.module('starter.controllers', ['firebase'])
       var container = document.createElement('li');
       container.innerHTML = MESSAGE_TEMPLATE;
       var pDiv = container.firstChild.firstChild;
-      if($scope.user.uid == sender){
+      if ($scope.user.uid == sender) {
         container.setAttribute('class', "self");
       }
       else {
@@ -360,25 +372,7 @@ angular.module('starter.controllers', ['firebase'])
           var token = result.credential.accessToken;
           // ...
         }
-        // The signed-in user info.
-        var user = result.user;
-        if (user) {
-          // User signed in!
-          var uid = user.uid;
-          console.log(user)
-          firebase.database().ref('users/' + user.uid).set({
-            displayName: user.displayName,
-            photoURL: user.photoURL,
-            contacts: [],
-            status: "active"
-          });
 
-          $state.go('tab.dash')
-        } else {
-          // User logged out
-          console.log("User logged out")
-          $state.go('login')
-        }
       }).catch(function (error) {
         // Handle Errors here.
         var errorCode = error.code;
@@ -398,6 +392,14 @@ angular.module('starter.controllers', ['firebase'])
     auth.onAuthStateChanged(function (user) {
 
       if (user) {
+        // User signed in!
+        var uid = user.uid;
+        firebase.database().ref('users/' + user.uid).update({
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+          status: "active"
+        });
+
         $state.go('tab.dash')
       } else {
         // User logged out
