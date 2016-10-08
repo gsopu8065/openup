@@ -104,7 +104,7 @@ angular.module('starter.controllers', ['firebase'])
               optimized: false
             })
             marker.addListener('click', function () {
-              $scope.openModal(key, userDetails);
+              $scope.openModal(key);
             });
           });
         }
@@ -121,17 +121,22 @@ angular.module('starter.controllers', ['firebase'])
 
 
     //modal open
+    //modal open
     $ionicModal.fromTemplateUrl('templates/user-detail.html', {
       scope: $scope,
       animation: 'slide-in-up'
     }).then(function (modal) {
       $scope.modal = modal;
     });
-    $scope.openModal = function (userId, userDetails) {
+    $scope.openModal = function (userId) {
       $scope.chatUserId = userId;
-      $scope.aImages = userDetails.photoURL;
-      $scope.modal.show();
-      $ionicSlideBoxDelegate.slide(0);
+      firebase.database().ref('users/' + $scope.chatUserId).once('value').then(function (userQueryRes) {
+        $scope.aImages  = userQueryRes.val().photoURL;
+        $scope.chatButton = true;
+        $scope.modal.show();
+        $ionicSlideBoxDelegate.slide(0);
+      })
+
     };
     $scope.closeModal = function () {
       $scope.modal.hide();
@@ -174,7 +179,7 @@ angular.module('starter.controllers', ['firebase'])
     };
   })
 
-  .controller('ChatDetailCtrl', function ($scope, $stateParams, $state) {
+  .controller('ChatDetailCtrl', function ($scope, $stateParams, $state, $ionicModal, $ionicSlideBoxDelegate) {
 
     //dom start
     var messageList = document.getElementById('messageList');
@@ -204,16 +209,6 @@ angular.module('starter.controllers', ['firebase'])
     $scope.saveMessage = function (message) {
       // Add a new message entry to the Firebase Database.
       if (message) {
-        console.log(message.text)
-        /*messagesRef.push({
-         name: $scope.user.displayName,
-         text: message.text,
-         timestamp: new Date().getTime(),
-         sender: $scope.user.uid
-         }).then(function () {
-         // Clear message text field and SEND button state.
-         console.log("sent")
-         messageText.value = '';*/
 
         //save in sender and receiver contacts start
         messagesRef.once("value", function (snapshot) {
@@ -267,10 +262,6 @@ angular.module('starter.controllers', ['firebase'])
 
         })
         //save in sender and receiver contacts end
-
-        /*}.bind(this)).catch(function (error) {
-         console.error('Error writing new message to Firebase Database', error);
-         });*/
       }
 
     };
@@ -334,6 +325,32 @@ angular.module('starter.controllers', ['firebase'])
         container.classList.add('visible')
       }, 1);
       container.scrollTop = container.scrollHeight;
+    };
+
+    //show profile
+    $scope.showProfile = function () {
+      $scope.openModal($stateParams.chatId);
+    }
+
+    //modal open
+    $ionicModal.fromTemplateUrl('templates/user-detail.html', {
+      scope: $scope,
+      animation: 'slide-in-up'
+    }).then(function (modal) {
+      $scope.modal = modal;
+    });
+    $scope.openModal = function (userId) {
+      $scope.chatUserId = userId;
+      firebase.database().ref('users/' + $scope.chatUserId).once('value').then(function (userQueryRes) {
+        $scope.aImages  = userQueryRes.val().photoURL;
+        $scope.chatButton = false;
+        $scope.modal.show();
+        $ionicSlideBoxDelegate.slide(0);
+      })
+
+    };
+    $scope.closeModal = function () {
+      $scope.modal.hide();
     };
 
     loadMessages()

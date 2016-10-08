@@ -7,6 +7,6 @@
     </ion-slide-box>-->
     <img ng-src="{{aImages}}" class="fullscreen-image1" /> <br/>
     <button class = "button" ng-click = "closeModal()">close</button> <br/>
-    <button class = "button" ng-click = "startConversation()">Chat</button>
+    <button class = "button" ng-show="chatButton == true" ng-click = "startConversation()">Chat</button>
   </ion-content>
 </ion-modal-view>
