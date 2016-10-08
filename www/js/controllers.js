@@ -276,6 +276,9 @@ angular.module('starter.controllers', ['firebase'])
     };
 
     var loadMessages = function () {
+
+      console.log("load called")
+
       // Loads the last 12 messages and listen for new ones.
       var setMessage = function (data) {
         var val = data.val();
@@ -333,7 +336,6 @@ angular.module('starter.controllers', ['firebase'])
       container.scrollTop = container.scrollHeight;
     };
 
-    //load messages
     loadMessages()
 
   })
