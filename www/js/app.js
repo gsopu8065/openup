@@ -39,13 +39,6 @@ angular.module('starter', ['ionic', 'starter.controllers', 'starter.services', '
         controller: 'LoginCtrl'
       })
 
-      .state('firstChat', {
-        url: '/firstChat/:chatId',
-        templateUrl: 'templates/first-chat-detail.html',
-        controller: 'ChatDetailCtrl'
-      })
-
-
       // setup an abstract state for the tabs directive
       .state('tab', {
         url: '/tab',

@@ -142,7 +142,7 @@ angular.module('starter.controllers', ['firebase'])
       $scope.modal.hide();
     };
     $scope.startConversation = function () {
-      $state.go('firstChat', {chatId: $scope.chatUserId})
+      $state.go('tab.chat-detail', {chatId: $scope.chatUserId})
       $scope.modal.hide();
     };
 
@@ -164,7 +164,6 @@ angular.module('starter.controllers', ['firebase'])
         var userDetails = user.val();
         if (userDetails.contacts) {
           $scope.chats = userDetails.contacts;
-          console.log($scope.chats)
         }
         else {
           $scope.chats = [];
@@ -239,7 +238,6 @@ angular.module('starter.controllers', ['firebase'])
               firebase.database().ref('users/' + $scope.user.uid).once('value').then(function (currentUserQueryRes) {
                 var currentUserContacts = currentUserQueryRes.val().contacts || [];
                 currentUserContacts.push(currentUserContactDetails)
-                console.log(currentUserContacts);
                 firebase.database().ref('users/' + $scope.user.uid).update({
                   contacts: currentUserContacts
                 })
@@ -254,7 +252,6 @@ angular.module('starter.controllers', ['firebase'])
             sender: $scope.user.uid
           }).then(function () {
             // Clear message text field and SEND button state.
-            console.log("sent")
             messageText.value = '';
           }.bind(this)).catch(function (error) {
             console.error('Error writing new message to Firebase Database', error);
@@ -267,8 +264,6 @@ angular.module('starter.controllers', ['firebase'])
     };
 
     var loadMessages = function () {
-
-      console.log("load called")
 
       // Loads the last 12 messages and listen for new ones.
       var setMessage = function (data) {
@@ -361,15 +356,12 @@ angular.module('starter.controllers', ['firebase'])
 
     var provider = new firebase.auth.FacebookAuthProvider();
     var auth = firebase.auth();
-    console.log("init donne")
 
     $scope.login = function () {
-      console.log("login called")
       //web
       /*auth.signInWithPopup(provider).then(function(result) {
        var token = result.credential.accessToken;
        var user = result.user;
-       console.log(user);
        $state.go('tab.dash')
        }).catch(function(error) {
        var errorCode = error.code;
@@ -382,14 +374,10 @@ angular.module('starter.controllers', ['firebase'])
 
       //app
       auth.signInWithRedirect(provider);
-      console.log("login called2")
       firebase.auth().getRedirectResult().then(function (result) {
-
-        console.log("result", result)
         if (result.credential) {
           // This gives you a Facebook Access Token. You can use it to access the Facebook API.
           var token = result.credential.accessToken;
-          // ...
         }
 
       }).catch(function (error) {
