@@ -1,4 +1,4 @@
-angular.module('starter.controllers', ['firebase'])
+angular.module('starter.controllers', ['firebase', 'angular-jwt'])
 
   .controller('DashCtrl', function ($scope, $cordovaGeolocation, $ionicPlatform, $ionicLoading, $ionicModal, $ionicSlideBoxDelegate, $filter, $state) {
 
@@ -352,9 +352,12 @@ angular.module('starter.controllers', ['firebase'])
 
   })
 
-  .controller('LoginCtrl', function ($scope, $stateParams, $firebaseAuth, $state) {
+  .controller('LoginCtrl', function ($scope, $stateParams, $firebaseAuth, $state, jwtHelper, $http) {
 
     var provider = new firebase.auth.FacebookAuthProvider();
+    provider.addScope('user_birthday');
+    provider.addScope('user_photos');
+    provider.addScope('user_about_me');
     var auth = firebase.auth();
 
     $scope.login = function () {
@@ -397,6 +400,27 @@ angular.module('starter.controllers', ['firebase'])
 
     //auto login
     auth.onAuthStateChanged(function (user) {
+
+      auth.getToken(true).then(function(res){
+        if(res){
+          var tokenPayload = jwtHelper.decodeToken(res.accessToken);
+          console.log(tokenPayload)
+
+          $http({
+            method: 'GET',
+            url: 'https://graph.facebook.com/v2.8/'+tokenPayload.firebase.identities["facebook.com"][0]+'?fields=id,name,about,photos,birthday&access_token=EAAXV6r5YQYQBAHsvaluJSDzIfGuVw5KyLrxAR2olj6KgpWmrg7bXf86yivHcxPJbQTBdYvy7K17k7JmZBQc0ZBSZBPpnINQkdjmVsuMu2oa0YiMOP0FmVEziQO1ZCMAvRBZBmdtPbIoDKTMiuT9sVcxLRAXSlshuu1wWxjZC4O0wZDZD'
+          }).then(function successCallback(response) {
+            // this callback will be called asynchronously
+            // when the response is available
+            console.log(response)
+          }, function errorCallback(response) {
+            // called asynchronously if an error occurs
+            // or server returns response with an error status.
+          });
+
+        }
+      })
+
 
       if (user) {
         // User signed in!
