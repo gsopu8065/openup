@@ -131,7 +131,7 @@ angular.module('starter.controllers', ['firebase', 'angular-jwt'])
     $scope.openModal = function (userId) {
       $scope.chatUserId = userId;
       firebase.database().ref('users/' + $scope.chatUserId).once('value').then(function (userQueryRes) {
-        $scope.aImages  = userQueryRes.val().photoURL;
+        $scope.aImages = userQueryRes.val().photoURL;
         $scope.chatButton = true;
         $scope.modal.show();
         $ionicSlideBoxDelegate.slide(0);
@@ -217,6 +217,7 @@ angular.module('starter.controllers', ['firebase', 'angular-jwt'])
               contactid: $scope.user.uid,
               displayName: $scope.user.displayName,
               photoURL: $scope.user.photoURL,
+              token: $scope.user.token,
               status: "active"
             }
 
@@ -232,6 +233,7 @@ angular.module('starter.controllers', ['firebase', 'angular-jwt'])
                 contactid: $stateParams.chatId,
                 displayName: userQueryRes.val().displayName,
                 photoURL: userQueryRes.val().photoURL,
+                token: userQueryRes.val().token,
                 status: "active"
               }
 
@@ -337,7 +339,7 @@ angular.module('starter.controllers', ['firebase', 'angular-jwt'])
     $scope.openModal = function (userId) {
       $scope.chatUserId = userId;
       firebase.database().ref('users/' + $scope.chatUserId).once('value').then(function (userQueryRes) {
-        $scope.aImages  = userQueryRes.val().photoURL;
+        $scope.aImages = userQueryRes.val().photoURL;
         $scope.chatButton = false;
         $scope.modal.show();
         $ionicSlideBoxDelegate.slide(0);
@@ -362,38 +364,39 @@ angular.module('starter.controllers', ['firebase', 'angular-jwt'])
 
     $scope.login = function () {
       //web
-      /*auth.signInWithPopup(provider).then(function(result) {
-       var token = result.credential.accessToken;
-       var user = result.user;
-       $state.go('tab.dash')
-       }).catch(function(error) {
-       var errorCode = error.code;
-       var errorMessage = error.message;
-       // The email of the user's account used.
-       var email = error.email;
-       // The firebase.auth.AuthCredential type that was used.
-       var credential = error.credential;
-       });*/
-
-      //app
-      auth.signInWithRedirect(provider);
-      firebase.auth().getRedirectResult().then(function (result) {
+      auth.signInWithPopup(provider).then(function (result) {
         if (result.credential) {
           // This gives you a Facebook Access Token. You can use it to access the Facebook API.
           var token = result.credential.accessToken;
         }
-
       }).catch(function (error) {
-        // Handle Errors here.
         var errorCode = error.code;
         var errorMessage = error.message;
         // The email of the user's account used.
         var email = error.email;
         // The firebase.auth.AuthCredential type that was used.
         var credential = error.credential;
-        // ...
-        console.log("error", error)
       });
+
+      //app
+      /*auth.signInWithRedirect(provider);
+       firebase.auth().getRedirectResult().then(function (result) {
+       if (result.credential) {
+       // This gives you a Facebook Access Token. You can use it to access the Facebook API.
+       var token = result.credential.accessToken;
+       }
+
+       }).catch(function (error) {
+       // Handle Errors here.
+       var errorCode = error.code;
+       var errorMessage = error.message;
+       // The email of the user's account used.
+       var email = error.email;
+       // The firebase.auth.AuthCredential type that was used.
+       var credential = error.credential;
+       // ...
+       console.log("error", error)
+       });*/
 
 
     };
@@ -401,51 +404,42 @@ angular.module('starter.controllers', ['firebase', 'angular-jwt'])
     //auto login
     auth.onAuthStateChanged(function (user) {
 
-      auth.getToken(true).then(function(res){
-        if(res){
-          var tokenPayload = jwtHelper.decodeToken(res.accessToken);
-          console.log(tokenPayload)
+      /*auth.getToken(true).then(function(res){
+       if(res){
+       var tokenPayload = jwtHelper.decodeToken(res.accessToken);
+       /!*$http({
+       method: 'GET',
+       url: 'https://graph.facebook.com/v2.8/'+tokenPayload.firebase.identities["facebook.com"][0]+'?fields=id,name,about,birthday,picture&access_token=' +
+       'EAAXV6r5YQYQBAMFp4xty8RTwFU2iJdk5qUyWkg35GQWzydItTCQfVMP2URCZCAxlpOkkc4BsaGvZAcc21qHLLPTRFunjxwpWINLffMIVo782IEA097oglVFiTEzkZC6UcDKeeKvB9IS1MbZBGHCrb8U7QQMXmncqh9lMbxJ8ugZDZD'
+       }).then(function successCallback(response) {
+       // this callback will be called asynchronously
+       // when the response is available
+       console.log(response)
+       }, function errorCallback(response) {
+       // called asynchronously if an error occurs
+       // or server returns response with an error status.
+       });*!/
 
-          $http({
-            method: 'GET',
-            url: 'https://graph.facebook.com/v2.8/'+tokenPayload.firebase.identities["facebook.com"][0]+'?fields=id,name,about,birthday,picture&access_token=' +
-            'EAAXV6r5YQYQBAMFp4xty8RTwFU2iJdk5qUyWkg35GQWzydItTCQfVMP2URCZCAxlpOkkc4BsaGvZAcc21qHLLPTRFunjxwpWINLffMIVo782IEA097oglVFiTEzkZC6UcDKeeKvB9IS1MbZBGHCrb8U7QQMXmncqh9lMbxJ8ugZDZD'
-          }).then(function successCallback(response) {
-            // this callback will be called asynchronously
-            // when the response is available
-            console.log(response)
-          }, function errorCallback(response) {
-            // called asynchronously if an error occurs
-            // or server returns response with an error status.
-          });
-
-          $http({
-            method: 'GET',
-            url: 'https://graph.facebook.com/v2.8/'+tokenPayload.firebase.identities["facebook.com"][0]+'/photos?type=uploaded&access_token=' +
-            'EAAXV6r5YQYQBAMFp4xty8RTwFU2iJdk5qUyWkg35GQWzydItTCQfVMP2URCZCAxlpOkkc4BsaGvZAcc21qHLLPTRFunjxwpWINLffMIVo782IEA097oglVFiTEzkZC6UcDKeeKvB9IS1MbZBGHCrb8U7QQMXmncqh9lMbxJ8ugZDZD'
-          }).then(function successCallback(response) {
-            // this callback will be called asynchronously
-            // when the response is available
-            console.log(response)
-          }, function errorCallback(response) {
-            // called asynchronously if an error occurs
-            // or server returns response with an error status.
-          });
-
-        }
-      })
+       }
+       })*/
 
 
       if (user) {
         // User signed in!
-        var uid = user.uid;
-        firebase.database().ref('users/' + user.uid).update({
-          displayName: user.displayName,
-          photoURL: user.photoURL,
-          status: "active"
-        });
+        auth.getToken(true).then(function (res) {
+          if (res) {
+            var tokenPayload = jwtHelper.decodeToken(res.accessToken);
+            var uid = user.uid;
+            firebase.database().ref('users/' + user.uid).update({
+              displayName: user.displayName,
+              photoURL: user.photoURL,
+              token: tokenPayload,
+              status: "active"
+            });
 
-        $state.go('tab.dash')
+            $state.go('tab.dash')
+          }
+        })
       } else {
         // User logged out
         console.log("User logged out")
