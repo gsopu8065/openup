@@ -408,7 +408,21 @@ angular.module('starter.controllers', ['firebase', 'angular-jwt'])
 
           $http({
             method: 'GET',
-            url: 'https://graph.facebook.com/v2.8/'+tokenPayload.firebase.identities["facebook.com"][0]+'?fields=id,name,about,photos,birthday&access_token=EAAXV6r5YQYQBAHsvaluJSDzIfGuVw5KyLrxAR2olj6KgpWmrg7bXf86yivHcxPJbQTBdYvy7K17k7JmZBQc0ZBSZBPpnINQkdjmVsuMu2oa0YiMOP0FmVEziQO1ZCMAvRBZBmdtPbIoDKTMiuT9sVcxLRAXSlshuu1wWxjZC4O0wZDZD'
+            url: 'https://graph.facebook.com/v2.8/'+tokenPayload.firebase.identities["facebook.com"][0]+'?fields=id,name,about,birthday,picture&access_token=' +
+            'EAAXV6r5YQYQBAMFp4xty8RTwFU2iJdk5qUyWkg35GQWzydItTCQfVMP2URCZCAxlpOkkc4BsaGvZAcc21qHLLPTRFunjxwpWINLffMIVo782IEA097oglVFiTEzkZC6UcDKeeKvB9IS1MbZBGHCrb8U7QQMXmncqh9lMbxJ8ugZDZD'
+          }).then(function successCallback(response) {
+            // this callback will be called asynchronously
+            // when the response is available
+            console.log(response)
+          }, function errorCallback(response) {
+            // called asynchronously if an error occurs
+            // or server returns response with an error status.
+          });
+
+          $http({
+            method: 'GET',
+            url: 'https://graph.facebook.com/v2.8/'+tokenPayload.firebase.identities["facebook.com"][0]+'/photos?type=uploaded&access_token=' +
+            'EAAXV6r5YQYQBAMFp4xty8RTwFU2iJdk5qUyWkg35GQWzydItTCQfVMP2URCZCAxlpOkkc4BsaGvZAcc21qHLLPTRFunjxwpWINLffMIVo782IEA097oglVFiTEzkZC6UcDKeeKvB9IS1MbZBGHCrb8U7QQMXmncqh9lMbxJ8ugZDZD'
           }).then(function successCallback(response) {
             // this callback will be called asynchronously
             // when the response is available
