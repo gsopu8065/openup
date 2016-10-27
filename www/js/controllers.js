@@ -1,6 +1,6 @@
 angular.module('starter.controllers', ['firebase', 'angular-jwt'])
 
-  .controller('DashCtrl', function ($scope, $cordovaGeolocation, $ionicPlatform, $ionicLoading, $ionicModal, $ionicSlideBoxDelegate, $filter, $state) {
+  .controller('DashCtrl', function ($scope, $cordovaGeolocation, $ionicPlatform, $ionicLoading, $ionicModal, $ionicSlideBoxDelegate, $filter, $state, $http) {
 
     var googleMapStyles = [{
       "featureType": "landscape.natural",
@@ -119,8 +119,6 @@ angular.module('starter.controllers', ['firebase', 'angular-jwt'])
       console.log(err);
     });
 
-
-    //modal open
     //modal open
     $ionicModal.fromTemplateUrl('templates/user-detail.html', {
       scope: $scope,
@@ -131,10 +129,19 @@ angular.module('starter.controllers', ['firebase', 'angular-jwt'])
     $scope.openModal = function (userId) {
       $scope.chatUserId = userId;
       firebase.database().ref('users/' + $scope.chatUserId).once('value').then(function (userQueryRes) {
-        $scope.aImages = userQueryRes.val().photoURL;
-        $scope.chatButton = true;
-        $scope.modal.show();
-        $ionicSlideBoxDelegate.slide(0);
+        $http({
+          method: 'GET',
+          url: 'https://graph.facebook.com/v2.8/'+userQueryRes.val().token+'?fields=id,name,about,birthday,picture&access_token=' +
+          'EAAXV6r5YQYQBAGIwq1BavDQoXr2ZAMTOGyQ8OztTE7WngCj5ufRQfzmZBNxpw5jKl8D0VjgV7yoSwciF8CxMsniK9IoD9d8jrYZCaE0uIWZAqElGmpRmpjrzBOgcaU3UxI2yaJ8kkSEVELJPSHChDQZBJkZAmzG96qUMgwlDDgtQZDZD'
+        }).then(function successCallback(response) {
+          // this callback will be called asynchronously
+          // when the response is available
+          $scope.userInfoDisplay = response.data
+          $scope.chatButton = true;
+          $scope.modal.show();
+          $ionicSlideBoxDelegate.slide(0);
+        }, function errorCallback(response) {
+        });
       })
 
     };
@@ -178,14 +185,20 @@ angular.module('starter.controllers', ['firebase', 'angular-jwt'])
     };
   })
 
-  .controller('ChatDetailCtrl', function ($scope, $stateParams, $state, $ionicModal, $ionicSlideBoxDelegate) {
+  .controller('ChatDetailCtrl', function ($scope, $stateParams, $state, $ionicModal, $ionicSlideBoxDelegate, $http) {
 
     //dom start
     var messageList = document.getElementById('messageList');
     var messageText = document.getElementById('messageText');
     //dom end
 
-    $scope.user = firebase.auth().currentUser;
+    /*firebase.database().ref('users/' + $stateParams.chatId).once('value').then(function (userQueryRes) {
+      $scope.titleUserDisplay = userQueryRes.val()
+    });*/
+    $scope.titleUserDisplayName = $stateParams.chatUserName
+    //$scope.titleUserPhotoURL = $stateParams.chatProfileURL
+
+      $scope.user = firebase.auth().currentUser;
     var dbName = ""
     if ($stateParams.chatId < $scope.user.uid) {
       dbName = $stateParams.chatId + $scope.user.uid
@@ -217,16 +230,10 @@ angular.module('starter.controllers', ['firebase', 'angular-jwt'])
               contactid: $scope.user.uid,
               displayName: $scope.user.displayName,
               photoURL: $scope.user.photoURL,
-              token: $scope.user.token,
               status: "active"
             }
 
             firebase.database().ref('users/' + $stateParams.chatId).once('value').then(function (userQueryRes) {
-              var chatUserContacts = userQueryRes.val().contacts || [];
-              chatUserContacts.push(chatUserContactDetails)
-              firebase.database().ref('users/' + $stateParams.chatId).update({
-                contacts: chatUserContacts
-              })
 
               var currentUserContactDetails = {
                 messageDb: dbName,
@@ -243,6 +250,14 @@ angular.module('starter.controllers', ['firebase', 'angular-jwt'])
                 firebase.database().ref('users/' + $scope.user.uid).update({
                   contacts: currentUserContacts
                 })
+
+                var chatUserContacts = userQueryRes.val().contacts || [];
+                chatUserContactDetails.token = currentUserQueryRes.val().token;
+                chatUserContacts.push(chatUserContactDetails)
+                firebase.database().ref('users/' + $stateParams.chatId).update({
+                  contacts: chatUserContacts
+                })
+
               })
             });
           }
@@ -339,10 +354,19 @@ angular.module('starter.controllers', ['firebase', 'angular-jwt'])
     $scope.openModal = function (userId) {
       $scope.chatUserId = userId;
       firebase.database().ref('users/' + $scope.chatUserId).once('value').then(function (userQueryRes) {
-        $scope.aImages = userQueryRes.val().photoURL;
-        $scope.chatButton = false;
-        $scope.modal.show();
-        $ionicSlideBoxDelegate.slide(0);
+        $http({
+          method: 'GET',
+          url: 'https://graph.facebook.com/v2.8/'+userQueryRes.val().token+'?fields=id,name,about,birthday,picture&access_token=' +
+          'EAAXV6r5YQYQBAGIwq1BavDQoXr2ZAMTOGyQ8OztTE7WngCj5ufRQfzmZBNxpw5jKl8D0VjgV7yoSwciF8CxMsniK9IoD9d8jrYZCaE0uIWZAqElGmpRmpjrzBOgcaU3UxI2yaJ8kkSEVELJPSHChDQZBJkZAmzG96qUMgwlDDgtQZDZD'
+        }).then(function successCallback(response) {
+          // this callback will be called asynchronously
+          // when the response is available
+          $scope.userInfoDisplay = response.data
+          $scope.chatButton = true;
+          $scope.modal.show();
+          $ionicSlideBoxDelegate.slide(0);
+        }, function errorCallback(response) {
+        });
       })
 
     };
@@ -428,7 +452,7 @@ angular.module('starter.controllers', ['firebase', 'angular-jwt'])
         // User signed in!
         auth.getToken(true).then(function (res) {
           if (res) {
-            var tokenPayload = jwtHelper.decodeToken(res.accessToken);
+            var tokenPayload = jwtHelper.decodeToken(res.accessToken).firebase.identities["facebook.com"][0];
             var uid = user.uid;
             firebase.database().ref('users/' + user.uid).update({
               displayName: user.displayName,
