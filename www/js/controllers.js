@@ -192,13 +192,10 @@ angular.module('starter.controllers', ['firebase', 'angular-jwt'])
     var messageText = document.getElementById('messageText');
     //dom end
 
-    /*firebase.database().ref('users/' + $stateParams.chatId).once('value').then(function (userQueryRes) {
-      $scope.titleUserDisplay = userQueryRes.val()
-    });*/
-    $scope.titleUserDisplayName = $stateParams.chatUserName
-    //$scope.titleUserPhotoURL = $stateParams.chatProfileURL
+    $scope.titleUserDisplayName = $stateParams.chatName
+    $scope.titleUserDisplayUrl = $stateParams.chatUrl
 
-      $scope.user = firebase.auth().currentUser;
+    $scope.user = firebase.auth().currentUser;
     var dbName = ""
     if ($stateParams.chatId < $scope.user.uid) {
       dbName = $stateParams.chatId + $scope.user.uid
@@ -487,4 +484,8 @@ angular.module('starter.controllers', ['firebase', 'angular-jwt'])
       });
     }
 
-  });
+  })
+
+.filter('escape', function() {
+  return window.encodeURIComponent;
+});

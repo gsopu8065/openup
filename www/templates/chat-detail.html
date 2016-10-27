@@ -4,7 +4,7 @@
   The FriendsCtrl pulls data from the Friends service (service.js)
   The Friends service returns an array of friend data
 -->
-<ion-view cache-view="false" view-title="{{user.displayName}}">
+<ion-view cache-view="false" view-title="{{titleUserDisplayName}}">
 
   <ion-nav-bar>
   </ion-nav-bar>
@@ -16,7 +16,7 @@
   </ion-nav-buttons>
 
   <ion-nav-buttons side="right">
-    <img ng-src="{{user.photoURL}}" style="
+    <img ng-src="{{titleUserDisplayUrl}}" style="
     max-width: 35px;
     max-height: 65px;
     border-radius: 50%;" ng-click="showProfile()">
