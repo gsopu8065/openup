@@ -384,42 +384,44 @@ angular.module('starter.controllers', ['firebase', 'angular-jwt'])
     var auth = firebase.auth();
 
     $scope.login = function () {
-      //web
-      auth.signInWithPopup(provider).then(function (result) {
-        if (result.credential) {
-          // This gives you a Facebook Access Token. You can use it to access the Facebook API.
-          var token = result.credential.accessToken;
-        }
-      }).catch(function (error) {
-        var errorCode = error.code;
-        var errorMessage = error.message;
-        // The email of the user's account used.
-        var email = error.email;
-        // The firebase.auth.AuthCredential type that was used.
-        var credential = error.credential;
-      });
 
-      //app
-      /*auth.signInWithRedirect(provider);
-       firebase.auth().getRedirectResult().then(function (result) {
-       if (result.credential) {
-       // This gives you a Facebook Access Token. You can use it to access the Facebook API.
-       var token = result.credential.accessToken;
-       }
+      if ((window.cordova && device.platform == 'iOS') || (window.cordova && device.platform == 'Android')) {
+        //app
+        auth.signInWithRedirect(provider);
+        firebase.auth().getRedirectResult().then(function (result) {
+          if (result.credential) {
+            // This gives you a Facebook Access Token. You can use it to access the Facebook API.
+            var token = result.credential.accessToken;
+          }
 
-       }).catch(function (error) {
-       // Handle Errors here.
-       var errorCode = error.code;
-       var errorMessage = error.message;
-       // The email of the user's account used.
-       var email = error.email;
-       // The firebase.auth.AuthCredential type that was used.
-       var credential = error.credential;
-       // ...
-       console.log("error", error)
-       });*/
-
-
+        }).catch(function (error) {
+          // Handle Errors here.
+          var errorCode = error.code;
+          var errorMessage = error.message;
+          // The email of the user's account used.
+          var email = error.email;
+          // The firebase.auth.AuthCredential type that was used.
+          var credential = error.credential;
+          // ...
+          console.log("error", error)
+        });
+      }
+      else{
+        //web
+        auth.signInWithPopup(provider).then(function (result) {
+         if (result.credential) {
+         // This gives you a Facebook Access Token. You can use it to access the Facebook API.
+         var token = result.credential.accessToken;
+         }
+         }).catch(function (error) {
+         var errorCode = error.code;
+         var errorMessage = error.message;
+         // The email of the user's account used.
+         var email = error.email;
+         // The firebase.auth.AuthCredential type that was used.
+         var credential = error.credential;
+         });
+      }
     };
 
     //auto login
