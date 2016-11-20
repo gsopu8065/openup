@@ -1,6 +1,6 @@
 angular.module('starter.controllers', ['firebase', 'angular-jwt'])
 
-  .controller('DashCtrl', function ($scope, $cordovaGeolocation, $ionicPlatform, $ionicLoading, $ionicModal, $ionicSlideBoxDelegate, $filter, $state, $http) {
+  .controller('DashCtrl', function ($scope, $cordovaGeolocation, $q, $ionicPlatform, UserService, UserGeoService, FacebookCtrl, $ionicLoading, $ionicModal, $ionicSlideBoxDelegate, $filter, $state, $http, $stateParams) {
 
     var googleMapStyles = [{
       "featureType": "landscape.natural",
@@ -24,99 +24,93 @@ angular.module('starter.controllers', ['firebase', 'angular-jwt'])
       "stylers": [{"visibility": "on"}, {"lightness": 700}]
     }, {"featureType": "water", "elementType": "all", "stylers": [{"color": "#7dcdcd"}]}]
 
-    $ionicLoading.show({
-      template: '<ion-spinner icon="bubbles"></ion-spinner><br/>Acquiring location!'
-    });
+    /*$ionicLoading.show({
+     template: '<ion-spinner icon="bubbles"></ion-spinner><br/>Acquiring location!'
+     });*/
 
-    var posOptions = {timeout: 100000, enableHighAccuracy: false};
+    $scope.$on('$ionicView.enter', function (e) {
+      $scope.authToken = $stateParams.authToken
+      FacebookCtrl.getFacebookProfileInfo($scope.authToken).then(function (profileInfo) {
+        //$scope.userInfo = profileInfo;
 
-    $cordovaGeolocation.getCurrentPosition(posOptions).then(function (position) {
-      var lat = position.coords.latitude;
-      var long = position.coords.longitude;
-      var myLatlng = new google.maps.LatLng(lat, long);
+        //update user info
+        UserService.updateUserProfile(profileInfo);
 
-      var mapOptions = {
-        center: myLatlng,
-        zoom: 17,
-        disableDefaultUI: true,
-        styles: googleMapStyles,
-        mapTypeId: google.maps.MapTypeId.ROADMAP
-      };
+        var posOptions = {timeout: 100000, enableHighAccuracy: false};
+        $cordovaGeolocation.getCurrentPosition(posOptions).then(function (position) {
+          var lat = position.coords.latitude;
+          var long = position.coords.longitude;
+          var myLatlng = new google.maps.LatLng(lat, long);
 
-      //facebook profile info get start
-      $scope.user = firebase.auth().currentUser;
-      //facebook profile info get end
-
-
-      //update location start
-      // Create a Firebase reference where GeoFire will store its information
-      var firebaseRef = firebase.database().ref();
-      // Create a GeoFire index
-      $scope.geoFire = new GeoFire(firebaseRef);
-      var map = new google.maps.Map(document.getElementById("map"), mapOptions);
-      if ($scope.user) {
-        $scope.geoFire.set($scope.user.uid, [lat, long]).then(function () {
-          console.log("Provided key has been added to GeoFire");
-        }, function (error) {
-          console.log("Error: " + error);
-        });
-      }
-      else {
-        $state.go('login')
-      }
-      //update location end
-
-      /*$scope.currentLocation.addListener('click', function () {
-       $state.go('firstChat')
-       });*/
-
-      map.setOptions({draggable: true, zoomControl: true});
-      $scope.map = map;
-      $ionicLoading.hide();
-
-      //draw circle
-      $scope.circle = new google.maps.Circle({
-        map: map,
-        radius: 150,  // IN METERS.
-        fillColor: '#80dfff',
-        fillOpacity: 0.3,
-        strokeColor: "#FFF",
-        strokeWeight: 0,
-        center: myLatlng
-      });
-
-      //read map service 
-      var geoQuery = $scope.geoFire.query({center: [lat, long], radius: 0.15})
-      var onKeyEnteredRegistration = geoQuery.on("key_entered", function (key, location) {
-
-        //for each near by user
-        if ($scope.user.uid != key) {
-          firebase.database().ref('/users/' + key).once('value').then(function (user) {
-            var userDetails = user.val();
-            var marker = new google.maps.Marker({
-              position: new google.maps.LatLng(location[0], location[1]),
-              map: map,
-              icon: {
-                url: userDetails.photoURL,
-                scaledSize: new google.maps.Size(38, 38),
-                scale: 10
-              },
-              optimized: false
-            })
-            marker.addListener('click', function () {
-              $scope.openModal(key);
-            });
+          //update location start
+          UserGeoService.saveUserLocation(profileInfo.id, lat, long).then(function () {
+            console.log("User Location saved to Geo database");
+          }, function (error) {
+            console.log("User Location can't saved to Geo database: " + error);
           });
-        }
-      })
-      var onReadyRegistration = geoQuery.on("ready", function () {
-        geoQuery.cancel();
-      })
 
+          var mapOptions = {
+            center: myLatlng,
+            zoom: 17,
+            disableDefaultUI: true,
+            styles: googleMapStyles,
+            mapTypeId: google.maps.MapTypeId.ROADMAP
+          };
 
-    }, function (err) {
-      $ionicLoading.hide();
-      console.log(err);
+          var map = new google.maps.Map(document.getElementById("map"), mapOptions);
+          map.setOptions({draggable: true, zoomControl: true});
+          //$scope.map = map;
+          //$ionicLoading.hide();
+
+          //draw circle
+          $scope.circle = new google.maps.Circle({
+            map: map,
+            radius: 150,  // IN METERS.
+            fillColor: '#80dfff',
+            fillOpacity: 0.3,
+            strokeColor: "#FFF",
+            strokeWeight: 0,
+            center: myLatlng
+          });
+
+          //read map service 
+          var firebaseRef = firebase.database().ref();
+          $scope.geoFire = new GeoFire(firebaseRef);
+          var geoQuery = $scope.geoFire.query({center: [lat, long], radius: 0.15})
+          var onKeyEnteredRegistration = geoQuery.on("key_entered", function (key, location) {
+
+            //for each near by user
+            if (profileInfo.id != key) {
+              firebase.database().ref('/users/' + key).once('value').then(function (user) {
+                var userDetails = user.val();
+                var marker = new google.maps.Marker({
+                  position: new google.maps.LatLng(location[0], location[1]),
+                  map: map,
+                  icon: {
+                    url: userDetails.photoURL,
+                    scaledSize: new google.maps.Size(38, 38),
+                    scale: 10
+                  },
+                  optimized: false
+                })
+                marker.addListener('click', function () {
+                  $scope.openModal(key);
+                });
+              });
+            }
+          })
+          var onReadyRegistration = geoQuery.on("ready", function () {
+            geoQuery.cancel();
+          })
+
+        }, function (err) {
+          // $ionicLoading.hide();
+          console.log(err);
+        });
+
+      }, function (fail) {
+        console.log('profile info fail', fail);
+      });
     });
 
     //modal open
@@ -127,23 +121,12 @@ angular.module('starter.controllers', ['firebase', 'angular-jwt'])
       $scope.modal = modal;
     });
     $scope.openModal = function (userId) {
-      $scope.chatUserId = userId;
-      firebase.database().ref('users/' + $scope.chatUserId).once('value').then(function (userQueryRes) {
-        $http({
-          method: 'GET',
-          url: 'https://graph.facebook.com/v2.8/'+userQueryRes.val().token+'?fields=id,name,about,birthday,picture&access_token=' +
-          'EAAXV6r5YQYQBAGIwq1BavDQoXr2ZAMTOGyQ8OztTE7WngCj5ufRQfzmZBNxpw5jKl8D0VjgV7yoSwciF8CxMsniK9IoD9d8jrYZCaE0uIWZAqElGmpRmpjrzBOgcaU3UxI2yaJ8kkSEVELJPSHChDQZBJkZAmzG96qUMgwlDDgtQZDZD'
-        }).then(function successCallback(response) {
-          // this callback will be called asynchronously
-          // when the response is available
-          $scope.userInfoDisplay = response.data
-          $scope.chatButton = true;
-          $scope.modal.show();
-          $ionicSlideBoxDelegate.slide(0);
-        }, function errorCallback(response) {
-        });
+      UserService.getUserProfile(userId).then(function (userQueryRes) {
+        $scope.userInfoDisplay = response.data
+        $scope.chatButton = true;
+        $scope.modal.show();
+        $ionicSlideBoxDelegate.slide(0);
       })
-
     };
     $scope.closeModal = function () {
       $scope.modal.hide();
@@ -178,7 +161,6 @@ angular.module('starter.controllers', ['firebase', 'angular-jwt'])
       });
 
     }
-
 
     $scope.remove = function (chat) {
       Chats.remove(chat);
@@ -353,7 +335,7 @@ angular.module('starter.controllers', ['firebase', 'angular-jwt'])
       firebase.database().ref('users/' + $scope.chatUserId).once('value').then(function (userQueryRes) {
         $http({
           method: 'GET',
-          url: 'https://graph.facebook.com/v2.8/'+userQueryRes.val().token+'?fields=id,name,about,birthday,picture&access_token=' +
+          url: 'https://graph.facebook.com/v2.8/' + userQueryRes.val().token + '?fields=id,name,about,birthday,picture&access_token=' +
           'EAAXV6r5YQYQBAGIwq1BavDQoXr2ZAMTOGyQ8OztTE7WngCj5ufRQfzmZBNxpw5jKl8D0VjgV7yoSwciF8CxMsniK9IoD9d8jrYZCaE0uIWZAqElGmpRmpjrzBOgcaU3UxI2yaJ8kkSEVELJPSHChDQZBJkZAmzG96qUMgwlDDgtQZDZD'
         }).then(function successCallback(response) {
           // this callback will be called asynchronously
@@ -375,119 +357,68 @@ angular.module('starter.controllers', ['firebase', 'angular-jwt'])
 
   })
 
-  .controller('LoginCtrl', function ($scope, $stateParams, $firebaseAuth, $state, jwtHelper, $http) {
+  .controller('LoginCtrl', function ($scope, $stateParams, $firebaseAuth, $state, $http, FacebookCtrl) {
 
-    var provider = new firebase.auth.FacebookAuthProvider();
-    provider.addScope('user_birthday');
-    provider.addScope('user_photos');
-    provider.addScope('user_about_me');
-    var auth = firebase.auth();
-
-    $scope.login = function () {
-
-      if ((window.cordova && device.platform == 'iOS') || (window.cordova && device.platform == 'Android')) {
-        //app
-        auth.signInWithRedirect(provider);
-        firebase.auth().getRedirectResult().then(function (result) {
-          if (result.credential) {
-            // This gives you a Facebook Access Token. You can use it to access the Facebook API.
-            var token = result.credential.accessToken;
+      $scope.login = function () {
+        facebookConnectPlugin.login(['email', 'public_profile'], function (response) {
+          if (!response.authResponse) {
+            fbLoginError("Cannot find the authResponse");
+            return;
           }
+          console.log("not auto login")
+          console.log(response.authResponse);
+          $state.go('tab.dash', {authToken: response.authResponse.accessToken});
 
-        }).catch(function (error) {
-          // Handle Errors here.
-          var errorCode = error.code;
-          var errorMessage = error.message;
-          // The email of the user's account used.
-          var email = error.email;
-          // The firebase.auth.AuthCredential type that was used.
-          var credential = error.credential;
-          // ...
-          console.log("error", error)
+        }, function (error) {
+          console.log('Error: fbLoginError', error);
         });
-      }
-      else{
-        //web
-        auth.signInWithPopup(provider).then(function (result) {
-         if (result.credential) {
-         // This gives you a Facebook Access Token. You can use it to access the Facebook API.
-         var token = result.credential.accessToken;
-         }
-         }).catch(function (error) {
-         var errorCode = error.code;
-         var errorMessage = error.message;
-         // The email of the user's account used.
-         var email = error.email;
-         // The firebase.auth.AuthCredential type that was used.
-         var credential = error.credential;
-         });
-      }
-    };
+      };
 
-    //auto login
-    auth.onAuthStateChanged(function (user) {
+      //auto login
+      facebookConnectPlugin.getLoginStatus(function (success) {
+        if (success.status === 'connected') {
+          console.log("auto login")
+          console.log(success.authResponse);
+          $state.go('tab.dash', {authToken: success.authResponse.accessToken});
+        }
+        else {
+          console.log('Error: getLoginStatus', success.status);
+        }
+      });
+    }
+  )
 
-      /*auth.getToken(true).then(function(res){
-       if(res){
-       var tokenPayload = jwtHelper.decodeToken(res.accessToken);
-       /!*$http({
-       method: 'GET',
-       url: 'https://graph.facebook.com/v2.8/'+tokenPayload.firebase.identities["facebook.com"][0]+'?fields=id,name,about,birthday,picture&access_token=' +
-       'EAAXV6r5YQYQBAMFp4xty8RTwFU2iJdk5qUyWkg35GQWzydItTCQfVMP2URCZCAxlpOkkc4BsaGvZAcc21qHLLPTRFunjxwpWINLffMIVo782IEA097oglVFiTEzkZC6UcDKeeKvB9IS1MbZBGHCrb8U7QQMXmncqh9lMbxJ8ugZDZD'
-       }).then(function successCallback(response) {
-       // this callback will be called asynchronously
-       // when the response is available
-       console.log(response)
-       }, function errorCallback(response) {
-       // called asynchronously if an error occurs
-       // or server returns response with an error status.
-       });*!/
-
-       }
-       })*/
-
-
-      if (user) {
-        // User signed in!
-        auth.getToken(true).then(function (res) {
-          if (res) {
-            var tokenPayload = jwtHelper.decodeToken(res.accessToken).firebase.identities["facebook.com"][0];
-            var uid = user.uid;
-            firebase.database().ref('users/' + user.uid).update({
-              displayName: user.displayName,
-              photoURL: user.photoURL,
-              token: tokenPayload,
-              status: "active"
-            });
-
-            $state.go('tab.dash')
-          }
-        })
-      } else {
-        // User logged out
-        console.log("User logged out")
-        $state.go('login')
-      }
-    });
-
-  })
-
-  .controller('AccountCtrl', function ($scope, $state) {
+  .controller('AccountCtrl', function ($scope, $state, $ionicActionSheet) {
     $scope.settings = {
       enableFriends: true
     };
 
     $scope.logout = function () {
-      firebase.auth().signOut().then(function () {
-        // Sign-out successful.
-        $state.go('login')
-      }, function (error) {
-        // An error happened.
+      var hideSheet = $ionicActionSheet.show({
+        destructiveText: 'Logout',
+        titleText: 'Are you sure you want to logout? This app is awsome so I recommend you to stay.',
+        cancelText: 'Cancel',
+        cancel: function () {
+        },
+        buttonClicked: function (index) {
+          return true;
+        },
+        destructiveButtonClicked: function () {
+          //facebook logout
+          facebookConnectPlugin.logout(function () {
+              console.log("logging out")
+              $scope.authResponse = undefined;
+              $state.go('login');
+            },
+            function (fail) {
+              console.log("logging out error")
+            });
+        }
       });
     }
 
   })
 
-.filter('escape', function() {
-  return window.encodeURIComponent;
-});
+  .filter('escape', function () {
+    return window.encodeURIComponent;
+  });

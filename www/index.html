@@ -24,7 +24,7 @@
     <!-- google maps javascript -->
 
     <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/3.4.1/firebase.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/3.6.1/firebase.js"></script>
 
     <!-- AngularFire -->
     <script src="https://cdn.firebase.com/libs/angularfire/2.0.2/angularfire.min.js"></script>
@@ -45,6 +45,11 @@
         messagingSenderId: "772635595775"
       };
       firebase.initializeApp(config);
+
+      window.onerror = function(message, url, lineNumber) {
+        console.log("Error: "+message+" in "+url+" at line "+lineNumber);
+      }
+
     </script>
 
     <!-- your app's js -->
