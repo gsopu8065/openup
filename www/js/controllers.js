@@ -28,7 +28,7 @@ angular.module('starter.controllers', ['firebase', 'angular-jwt'])
      template: '<ion-spinner icon="bubbles"></ion-spinner><br/>Acquiring location!'
      });*/
 
-    $scope.$on('$ionicView.enter', function (e) {
+    /*$scope.$on('$ionicView.enter', function (e) {
       $scope.authToken = $stateParams.authToken
       FacebookCtrl.getFacebookProfileInfo($scope.authToken).then(function (profileInfo) {
         //$scope.userInfo = profileInfo;
@@ -111,7 +111,7 @@ angular.module('starter.controllers', ['firebase', 'angular-jwt'])
       }, function (fail) {
         console.log('profile info fail', fail);
       });
-    });
+    });*/
 
     //modal open
     $ionicModal.fromTemplateUrl('templates/user-detail.html', {
@@ -359,34 +359,37 @@ angular.module('starter.controllers', ['firebase', 'angular-jwt'])
 
   .controller('LoginCtrl', function ($scope, $stateParams, $firebaseAuth, $state, $http, FacebookCtrl) {
 
-      $scope.login = function () {
-        facebookConnectPlugin.login(['email', 'public_profile'], function (response) {
-          if (!response.authResponse) {
-            fbLoginError("Cannot find the authResponse");
-            return;
-          }
-          console.log("not auto login")
-          console.log(response.authResponse);
-          $state.go('tab.dash', {authToken: response.authResponse.accessToken});
+    //This is the success callback from the login method
+    var fbLoginSuccess = function(response) {
+      var authResponse = response.authResponse;
+      console.log(authResponse);
+      $state.go('tab.dash');
+    };
 
-        }, function (error) {
-          console.log('Error: fbLoginError', error);
-        });
-      };
 
-      //auto login
-      facebookConnectPlugin.getLoginStatus(function (success) {
-        if (success.status === 'connected') {
-          console.log("auto login")
-          console.log(success.authResponse);
-          $state.go('tab.dash', {authToken: success.authResponse.accessToken});
-        }
-        else {
-          console.log('Error: getLoginStatus', success.status);
+    //This is the fail callback from the login method
+    var fbLoginError = function(error){
+      console.log('fbLoginError', error);
+      $ionicLoading.hide();
+    };
+
+    //This method is executed when the user press the "Login with facebook" button
+    $scope.login = function() {
+
+      console.log("login called")
+      facebookConnectPlugin.getLoginStatus(function(success){
+        console.log(success)
+        if(success.status === 'connected'){
+          console.log('getLoginStatus', success.status);
+          $state.go('tab.dash');
+        } else {
+          console.log('getLoginStatus', success.status);
+          facebookConnectPlugin.login([], fbLoginSuccess, fbLoginError);
         }
       });
-    }
-  )
+    };
+
+    })
 
   .controller('AccountCtrl', function ($scope, $state, $ionicActionSheet) {
     $scope.settings = {
